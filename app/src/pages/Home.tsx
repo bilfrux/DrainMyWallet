@@ -1,9 +1,8 @@
 import { connectWallet } from "@stellar-scaffold/app-lib"
 import React from "react"
 import { Link } from "react-router-dom"
+import Landing3D from "../components/landing/Landing3D"
 import Terminal from "../components/Terminal"
-import Typewriter from "../components/Typewriter"
-import { REPO_URL } from "../game/config"
 import { type Level, levels, pad } from "../game/levels"
 import { useCountUp } from "../hooks/useCountUp"
 import {
@@ -24,9 +23,6 @@ const STATUS_LABEL: Record<Status, string> = {
 	locked: "[ LOCKED ]",
 	soon: "[ SOON ]",
 }
-
-const PITCH =
-	"Every level is a deliberately vulnerable Soroban contract. Deploy your own instance on testnet, break it from your terminal, then come back and let the chain verify you won."
 
 const Home: React.FC = () => {
 	const { address } = useWallet()
@@ -54,25 +50,9 @@ const Home: React.FC = () => {
 
 	return (
 		<div className={styles.Home}>
-			<section className={styles.hero}>
-				<p className={styles.boot}>
-					root@meridian:~# ./wargame --network testnet
-				</p>
-				<h1 className={styles.title} data-text="DRAIN MY WALLET">
-					DRAIN MY WALLET
-				</h1>
-				<p className={styles.pitch}>
-					<Typewriter text={PITCH} />
-				</p>
-				<p className={styles.subpitch}>
-					Ethernaut trained a generation of Ethereum developers. Soroban
-					doesn&apos;t play by the same rules, so it gets its own training
-					ground.{" "}
-					<a href={REPO_URL} target="_blank" rel="noreferrer">
-						Read the source ↗
-					</a>
-				</p>
-			</section>
+			<Landing3D />
+
+			<div id="levels" className={styles.anchor} />
 
 			<Terminal title="~/player/stats">
 				{address ? (

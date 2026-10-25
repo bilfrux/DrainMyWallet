@@ -5,6 +5,7 @@ import {
 	fetchLeaderboard,
 	fetchProgress,
 	fetchRegisteredLevels,
+	fetchVaultBalance,
 	fetchXp,
 	isSafeNetwork,
 	networkPassphrase,
@@ -117,5 +118,16 @@ export const useLeaderboard = () => {
 		queryFn: fetchLeaderboard,
 		enabled: ready,
 		staleTime: 30_000,
+	})
+}
+
+/** Tokens left in the player's vault. Polled so the guide notices the exploit. */
+export const useVaultBalance = (instanceId: string | undefined) => {
+	const { ready } = useGameStatus()
+	return useQuery({
+		queryKey: ["vault", instanceId],
+		queryFn: () => fetchVaultBalance(instanceId!),
+		enabled: ready && !!instanceId,
+		refetchInterval: (query) => (query.state.data === 0n ? false : 4_000),
 	})
 }

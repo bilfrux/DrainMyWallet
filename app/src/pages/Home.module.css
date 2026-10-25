@@ -282,3 +282,8 @@
 		grid-area: status;
 	}
 }
+
+.anchor {
+	scroll-margin-top: 1rem;
+	margin-top: -1rem;
+}
