@@ -1,4 +1,11 @@
-import { contract, rpc, scValToNative, xdr } from "@stellar/stellar-sdk"
+import {
+	Asset,
+	contract,
+	Keypair,
+	rpc,
+	scValToNative,
+	xdr,
+} from "@stellar/stellar-sdk"
 import { allowHttp, networkPassphrase, rpcUrl, stellarNetwork } from "./env"
 import { signTransaction } from "./wallet"
 
@@ -34,6 +41,12 @@ interface FactoryClient {
 	progress: Call<{ player: string }, number[]>
 	xp_token: Call<Record<string, never>, string>
 	level: Call<{ level_id: number }, LevelConfig | undefined>
+	token: Call<Record<string, never>, string>
+}
+
+/** The Stellar Asset Contract of the LOOT game token. */
+interface SacClient {
+	name: Call<Record<string, never>, string>
 }
 
 /** A level as registered in the factory (None until registered). */
@@ -178,6 +191,55 @@ export const fetchXp = async (player: string): Promise<bigint> => {
 	const client = await getClient<XpClient>(await resolveXpToken())
 	const tx = await client.balance({ id: player })
 	return BigInt(unwrap<bigint>(tx.result))
+}
+
+let lootAsset: Promise<Asset> | undefined
+
+/**
+ * LOOT is a classic Stellar asset: its SAC's `name()` is `CODE:ISSUER`, so
+ * the factory's `token()` is enough to find it, nothing to configure.
+ */
+const resolveLootAsset = () => {
+	lootAsset ??= factory()
+		.then((client) => client.token({}))
+		.then((tx) => getClient<SacClient>(unwrap<string>(tx.result)))
+		.then((sac) => sac.name({}))
+		.then((tx) => {
+			const [code = "", issuer = ""] = unwrap<string>(tx.result).split(":")
+			return new Asset(code, issuer)
+		})
+	lootAsset.catch(() => (lootAsset = undefined))
+	return lootAsset
+}
+
+export interface LootStatus {
+	/** `CODE:ISSUER`, as `stellar tx new change-trust --line` expects it */
+	asset: string
+	/** Whether the player can receive LOOT at all */
+	trustline: boolean
+	/** Whole LOOT units held (the asset has 7 decimals) */
+	balance: string
+}
+
+/** The player's LOOT trustline and balance: their drained trophies. */
+export const fetchLoot = async (player: string): Promise<LootStatus> => {
+	const asset = await resolveLootAsset()
+	// Read the trustline entry directly: an absent one is an empty result here,
+	// where `getAssetBalance` throws "not found"
+	const key = xdr.LedgerKey.trustline(
+		new xdr.LedgerKeyTrustLine({
+			accountId: Keypair.fromPublicKey(player).xdrAccountId(),
+			asset: asset.toTrustLineXDRObject(),
+		}),
+	)
+	const { entries } = await server.getLedgerEntries(key)
+	const line = entries[0]?.val.trustLine()
+	const units = line?.balance().toBigInt() ?? 0n
+	return {
+		asset: `${asset.getCode()}:${asset.getIssuer()}`,
+		trustline: !!line,
+		balance: (units / 10_000_000n).toLocaleString(),
+	}
 }
 
 export interface LeaderboardEntry {

@@ -12,6 +12,7 @@ import { Link, useParams } from "react-router-dom"
 import AccessOverlay, { type CheckOutcome } from "../components/AccessOverlay"
 import SourceView from "../components/SourceView"
 import Terminal from "../components/Terminal"
+import TrustlineStep from "../components/TrustlineStep"
 import Typewriter from "../components/Typewriter"
 import { getLevel, pad } from "../game/levels"
 import {
@@ -52,8 +53,8 @@ const LevelPage = () => {
 
 	const refresh = () =>
 		Promise.all(
-			["instance", "instances", "progress", "xp", "leaderboard"].map((key) =>
-				queryClient.invalidateQueries({ queryKey: [key] }),
+			["instance", "instances", "progress", "xp", "loot", "leaderboard"].map(
+				(key) => queryClient.invalidateQueries({ queryKey: [key] }),
 			),
 		)
 
@@ -186,6 +187,8 @@ const LevelPage = () => {
 									{isChecking ? "Verifying…" : "Check"}
 								</button>
 							</div>
+
+							{level.needsTrustline && <TrustlineStep address={address} />}
 
 							{instanceId && (
 								<>

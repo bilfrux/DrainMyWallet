@@ -1,6 +1,7 @@
 import {
 	factoryContractId,
 	fetchInstance,
+	fetchLoot,
 	fetchLeaderboard,
 	fetchProgress,
 	fetchRegisteredLevels,
@@ -93,6 +94,19 @@ export const useInstances = (levelIds: number[]) => {
 			return new Map(entries)
 		},
 		enabled: ready && !!address,
+	})
+}
+
+/** LOOT trustline + balance of the connected player. */
+export const useLoot = (enabled = true) => {
+	const { address } = useWallet()
+	const { ready } = useGameStatus()
+	return useQuery({
+		queryKey: ["loot", address],
+		queryFn: () => fetchLoot(address!),
+		enabled: enabled && ready && !!address,
+		// The trustline gets added from the CLI: notice it without a reload
+		refetchInterval: (query) => (query.state.data?.trustline ? false : 5_000),
 	})
 }
 
