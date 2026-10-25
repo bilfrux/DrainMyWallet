@@ -93,7 +93,7 @@ const LevelPage = () => {
 
 	return (
 		<div className={styles.Level}>
-			<Link to="/" className={styles.back}>
+			<Link to="/play" className={styles.back}>
 				cd ..
 			</Link>
 

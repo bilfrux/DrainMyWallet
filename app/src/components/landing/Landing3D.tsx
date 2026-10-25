@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import styles from "./Landing3D.module.css"
 import { type LandingScene } from "./scene"
 
@@ -85,6 +85,7 @@ const shouldAnimate = () =>
  * Reduced motion, or no WebGL, gets the same story as plain stacked cards.
  */
 const Landing3D = () => {
+	const navigate = useNavigate()
 	const sectionRef = useRef<HTMLElement>(null)
 	const canvasRef = useRef<HTMLCanvasElement>(null)
 	const chapterRefs = useRef<(HTMLDivElement | null)[]>([])
@@ -222,8 +223,7 @@ const Landing3D = () => {
 		})
 	}
 
-	const enter = () =>
-		document.getElementById("levels")?.scrollIntoView({ behavior: "smooth" })
+	const enter = () => navigate("/play")
 
 	const chapterBody = (c: Chapter) => (
 		<>
@@ -256,12 +256,12 @@ const Landing3D = () => {
 			)}
 			{c.id === "proof" && (
 				<div className={styles.actions}>
-					<Link to="/level/1" className={styles.cta}>
-						Start level 01 ▸
-					</Link>
-					<button className={styles.ghost} onClick={enter}>
-						or see all levels ↓
+					<button className={styles.cta} onClick={enter}>
+						Enter the game ▸
 					</button>
+					<Link to="/level/1" className={styles.ghost}>
+						or start with level 01 →
+					</Link>
 				</div>
 			)}
 		</>
