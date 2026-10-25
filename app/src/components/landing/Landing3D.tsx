@@ -12,6 +12,8 @@ interface Chapter {
 	from: number
 	to: number
 	side: "center" | "left" | "right"
+	/** Fade length in scroll progress; defaults to FADE */
+	fade?: number
 }
 
 const CHAPTERS: Chapter[] = [
@@ -56,8 +58,8 @@ const CHAPTERS: Chapter[] = [
 		kicker: "04 / PROOF",
 		title: "The chain checks your win.",
 		body: "Press Check: the contract verifies it on-chain and mints $DRAIN XP. One reward per level, and you can't fake it or transfer it.",
-		from: 0.65,
-		to: 0.76,
+		from: 0.64,
+		to: 0.73,
 		side: "center",
 	},
 	{
@@ -65,9 +67,10 @@ const CHAPTERS: Chapter[] = [
 		kicker: "// vault.lock --release",
 		title: "ACCESS GRANTED",
 		body: "",
-		from: 0.79,
-		to: 0.85,
+		from: 0.745,
+		to: 0.855,
 		side: "center",
+		fade: 0.02,
 	},
 	{
 		id: "final",
@@ -81,7 +84,7 @@ const CHAPTERS: Chapter[] = [
 ]
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v))
-const FADE = 0.035
+const FADE = 0.03
 
 const webglAvailable = () => {
 	try {
@@ -137,8 +140,9 @@ const Landing3D = () => {
 			CHAPTERS.forEach((c, i) => {
 				const el = chapterRefs.current[i]
 				if (!el) return
-				const enter = clamp01((p - c.from) / FADE)
-				const leave = clamp01((c.to - p) / FADE)
+				const fade = c.fade ?? FADE
+				const enter = clamp01((p - c.from) / fade)
+				const leave = clamp01((c.to - p) / fade)
 				const visible = enter * leave
 				// Text flies in from depth and out past the viewer
 				const scale = 0.9 + 0.1 * enter + (1 - leave) * 0.14
@@ -251,12 +255,16 @@ const Landing3D = () => {
 	const chapterBody = (c: Chapter) => (
 		<>
 			<p className={styles.kicker}>{c.kicker}</p>
-			{c.id === "intro" || c.id === "grant" ? (
+			{c.id === "intro" ? (
 				<h1 className={styles.hero} data-text={c.title}>
 					{c.title}
 				</h1>
 			) : (
-				<h2 className={styles.title}>{c.title}</h2>
+				<h2
+					className={`${styles.title} ${c.id === "grant" ? styles.grant : ""}`}
+				>
+					{c.title}
+				</h2>
 			)}
 			{c.body && <p className={styles.body}>{c.body}</p>}
 			{c.id === "intro" && (
@@ -320,7 +328,7 @@ const Landing3D = () => {
 						ref={(el) => {
 							chapterRefs.current[i] = el
 						}}
-						className={`${styles.chapter} ${styles[c.side]} ${c.id === "intro" ? styles.bottom : ""}`}
+						className={`${styles.chapter} ${styles[c.side]} ${c.id === "intro" ? styles.bottom : ""} ${c.id === "grant" ? styles.grantChapter : ""}`}
 						style={i === 0 ? undefined : { opacity: 0, visibility: "hidden" }}
 					>
 						<div className={styles.panel}>{chapterBody(c)}</div>

@@ -397,7 +397,7 @@ export const createLandingScene = (
 	)
 	const treasureMaterial = new THREE.PointsMaterial({
 		map: coin,
-		size: 1.9,
+		size: 1.5,
 		transparent: true,
 		opacity: 0,
 		alphaTest: 0.05,
@@ -405,6 +405,29 @@ export const createLandingScene = (
 	})
 	const treasurePoints = new THREE.Points(treasureGeometry, treasureMaterial)
 	scene.add(treasurePoints)
+
+	// The finale's showpiece: a dozen big, crisp coins ringed around the text,
+	// each gently swaying so the Stellar mark is always readable.
+	const heroCoins = new THREE.Group()
+	const heroMaterial = new THREE.MeshBasicMaterial({
+		map: coin,
+		transparent: true,
+		opacity: 0,
+		side: THREE.DoubleSide,
+		depthWrite: false,
+		toneMapped: false,
+	})
+	const heroGeometry = new THREE.CircleGeometry(1.75, 64)
+	const heroCount = 12
+	for (let i = 0; i < heroCount; i++) {
+		const a = (i / heroCount) * Math.PI * 2 + 0.26
+		const mesh = new THREE.Mesh(heroGeometry, heroMaterial)
+		mesh.position.set(Math.cos(a) * 13, Math.sin(a) * 6.4, VAULT_ROOM - 16)
+		mesh.userData = { phase: i * 0.83, y: mesh.position.y }
+		heroCoins.add(mesh)
+	}
+	heroCoins.visible = false
+	scene.add(heroCoins)
 
 	// ── Post-processing: bloom makes the lines glow ──────────────────────
 	let composer: EffectComposer | undefined
@@ -478,7 +501,17 @@ export const createLandingScene = (
 		door.scale.setScalar(1 + open * 1.6)
 		const doorAlpha = 1 - smooth(FLASH_AT - 0.01, FLASH_AT + 0.03, progress)
 		doorMaterials.forEach((m) => (m.opacity = doorAlpha))
-		treasureMaterial.opacity = smooth(FLASH_AT, DOOR_THROUGH + 0.02, progress)
+		// Background coins stay soft; the crisp ones take over at the end
+		treasureMaterial.opacity =
+			0.6 * smooth(FLASH_AT, DOOR_THROUGH + 0.02, progress)
+		heroCoins.visible = progress > 0.9
+		heroMaterial.opacity = smooth(0.92, 0.965, progress)
+		heroCoins.children.forEach((mesh) => {
+			const { phase, y } = mesh.userData as { phase: number; y: number }
+			mesh.rotation.y = Math.sin(time * 0.8 + phase) * 0.45
+			mesh.rotation.z = Math.sin(time * 0.5 + phase) * 0.08
+			mesh.position.y = y + Math.sin(time * 0.9 + phase) * 0.35
+		})
 		treasurePoints.rotation.z = time * 0.03
 		door.rotation.z = Math.sin(time * 0.15) * 0.05
 		dustPoints.rotation.z = time * 0.02
@@ -486,8 +519,11 @@ export const createLandingScene = (
 		uniforms.uTime.value = time
 		if (bloom) {
 			const flash = clamp01(1 - Math.abs(progress - FLASH_AT) / FLASH_WIDTH)
-			bloom.strength =
+			const settle = smooth(0.9, 0.95, progress)
+			const live =
 				0.7 + 0.5 * Math.sin(time * 0.9) * 0.2 + progress * 0.5 + flash * 1.4
+			// Glow off at the end so the coins are crisp, not blown out
+			bloom.strength = lerp(live, 0.06, settle)
 		}
 
 		if (composer) composer.render()
@@ -536,6 +572,8 @@ export const createLandingScene = (
 			lineMaterials.forEach((m) => m.dispose())
 			coin.dispose()
 			treasureMaterial.dispose()
+			heroMaterial.dispose()
+			heroGeometry.dispose()
 			drainMaterial.dispose()
 			ringMaterial.dispose()
 			composer?.dispose()
