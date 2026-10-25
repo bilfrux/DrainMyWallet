@@ -3,12 +3,29 @@ import {
 	fetchInstance,
 	fetchLeaderboard,
 	fetchProgress,
+	fetchRegisteredLevels,
 	fetchXp,
 	isSafeNetwork,
 	networkPassphrase,
 } from "@stellar-scaffold/app-lib"
 import { useQuery } from "@tanstack/react-query"
+import { levels } from "../game/levels"
 import { useWallet } from "./useWallet"
+
+/**
+ * Levels registered in the factory, with their on-chain XP reward. A level
+ * missing from the map isn't deployed yet ("soon"). `undefined` while loading
+ * or when the factory isn't reachable: callers fall back to `levels.ts`.
+ */
+export const useRegisteredLevels = () => {
+	const { ready } = useGameStatus()
+	return useQuery({
+		queryKey: ["registered-levels"],
+		queryFn: () => fetchRegisteredLevels(levels.map((l) => l.id)),
+		enabled: ready,
+		staleTime: 60_000,
+	})
+}
 
 /** Whether the game can talk to its contracts, and why not if it can't. */
 export const useGameStatus = () => {
