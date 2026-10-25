@@ -8,6 +8,11 @@ export interface Level {
 	hint: string
 	xp: number
 	bonus?: boolean
+	/**
+	 * The exploit pays out LOOT, a classic asset: the player's account needs a
+	 * trustline first or the transfer fails with `Error(Contract, #13)`.
+	 */
+	needsTrustline?: boolean
 	/** Contract source, read at build time from the repo */
 	source?: string
 }
@@ -35,6 +40,7 @@ const LEVELS: Omit<Level, "source">[] = [
 		goal: "Empty the vault.",
 		hint: "Look at who is allowed to call withdraw. Then look again. In Soroban, nothing is protected unless someone calls require_auth().",
 		xp: 100,
+		needsTrustline: true,
 	},
 	{
 		id: 2,
@@ -45,6 +51,7 @@ const LEVELS: Omit<Level, "source">[] = [
 		goal: "Become the admin.",
 		hint: "One-time setup is only one-time if the code says so. What happens if you call initialize yourself?",
 		xp: 200,
+		needsTrustline: true,
 	},
 	{
 		id: 3,

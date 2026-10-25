@@ -1,0 +1,40 @@
+.step {
+	margin: 0 0 1.25rem;
+	padding: 0.75rem 1rem;
+	border: 1px dashed var(--color-warning);
+}
+
+.label {
+	margin: 0 0 0.35rem;
+	font-size: 0.7rem;
+	text-transform: uppercase;
+	letter-spacing: 0.1em;
+	color: var(--color-warning);
+}
+
+.warn {
+	margin: 0 0 0.75rem;
+	font-size: 0.85rem;
+}
+
+.cli {
+	margin: 0 0 0.5rem;
+	padding: 0.75rem 1rem;
+	overflow-x: auto;
+	background: rgba(0, 0, 0, 0.6);
+	border-left: 2px solid var(--color-warning);
+	font-size: 0.78rem;
+	color: var(--color-text);
+}
+
+.muted {
+	margin: 0 0 1rem;
+	font-size: 0.75rem;
+	color: var(--color-text-muted);
+}
+
+.ok {
+	margin: 0 0 1rem;
+	font-size: 0.85rem;
+	color: var(--color-accent);
+}
