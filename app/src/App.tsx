@@ -10,12 +10,14 @@ import Home from "./pages/Home"
 import Leaderboard from "./pages/Leaderboard"
 import LevelPage from "./pages/Level"
 import NotFound from "./pages/NotFound"
+import Play from "./pages/Play"
 
 function App() {
 	return (
 		<Routes>
 			<Route element={<AppLayout />}>
 				<Route path="/" element={<Home />} />
+				<Route path="/play" element={<Play />} />
 				<Route path="/level/:id" element={<LevelPage />} />
 				<Route path="/leaderboard" element={<Leaderboard />} />
 				<Route path="*" element={<NotFound />} />
@@ -38,7 +40,7 @@ const AppLayout = () => (
 				<span className="cursor" />
 			</Link>
 			<nav className={styles.headerNav}>
-				<NavLink to="/" end className={navClass}>
+				<NavLink to="/play" className={navClass}>
 					./levels
 				</NavLink>
 				<NavLink to="/leaderboard" className={navClass}>

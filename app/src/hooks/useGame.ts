@@ -1,10 +1,13 @@
 import {
 	factoryContractId,
 	fetchInstance,
+	fetchBanned,
 	fetchLoot,
 	fetchLeaderboard,
 	fetchProgress,
 	fetchRegisteredLevels,
+	fetchSolveCounts,
+	fetchVaultBalance,
 	fetchXp,
 	isSafeNetwork,
 	networkPassphrase,
@@ -117,5 +120,39 @@ export const useLeaderboard = () => {
 		queryFn: fetchLeaderboard,
 		enabled: ready,
 		staleTime: 30_000,
+	})
+}
+
+/** Tokens left in the player's vault. Polled so the guide notices the exploit. */
+export const useVaultBalance = (instanceId: string | undefined) => {
+	const { ready } = useGameStatus()
+	return useQuery({
+		queryKey: ["vault", instanceId],
+		queryFn: () => fetchVaultBalance(instanceId!),
+		enabled: ready && !!instanceId,
+		refetchInterval: (query) => (query.state.data === 0n ? false : 4_000),
+	})
+}
+
+/** Level 5: is the player still banned? Polled until the ban has expired. */
+export const useBanned = (instanceId: string | undefined) => {
+	const { address } = useWallet()
+	const { ready } = useGameStatus()
+	return useQuery({
+		queryKey: ["banned", instanceId, address],
+		queryFn: () => fetchBanned(instanceId!, address!),
+		enabled: ready && !!instanceId && !!address,
+		refetchInterval: (query) => (query.state.data === false ? false : 20_000),
+	})
+}
+
+/** How many players have solved each level, for the level list. */
+export const useSolveCounts = () => {
+	const { ready } = useGameStatus()
+	return useQuery({
+		queryKey: ["solve-counts"],
+		queryFn: fetchSolveCounts,
+		enabled: ready,
+		staleTime: 60_000,
 	})
 }
