@@ -1,62 +1,77 @@
-import { labPrefix } from "@stellar-scaffold/app-lib"
-import { NavLink, Outlet, Route, Routes } from "react-router-dom"
+import { Link, NavLink, Outlet, Route, Routes } from "react-router-dom"
 import styles from "./App.module.css"
 import ConnectAccount from "./components/ConnectAccount"
-import Debug from "./pages/Debug"
+import MatrixRain from "./components/MatrixRain"
+import NetworkGuard from "./components/NetworkGuard"
+import TestnetBanner from "./components/TestnetBanner"
+import XpCounter from "./components/XpCounter"
+import { REPO_URL } from "./game/config"
 import Home from "./pages/Home"
+import Leaderboard from "./pages/Leaderboard"
+import LevelPage from "./pages/Level"
+import NotFound from "./pages/NotFound"
 
 function App() {
 	return (
 		<Routes>
 			<Route element={<AppLayout />}>
 				<Route path="/" element={<Home />} />
-				<Route path="/debug" element={<Debug />} />
-				<Route path="/debug/:contractName" element={<Debug />} />
+				<Route path="/level/:id" element={<LevelPage />} />
+				<Route path="/leaderboard" element={<Leaderboard />} />
+				<Route path="*" element={<NotFound />} />
 			</Route>
 		</Routes>
 	)
 }
 
+const navClass = ({ isActive }: { isActive: boolean }) =>
+	isActive ? styles.active : ""
+
 const AppLayout = () => (
 	<div className={styles.AppLayout}>
+		<MatrixRain />
+		<TestnetBanner />
+
 		<header className={styles.header}>
-			<span className={styles.logo}>Scaffold</span>
+			<Link to="/" className={styles.logo}>
+				<span className={styles.prompt}>&gt;</span> drain_my_wallet
+				<span className="cursor" />
+			</Link>
 			<nav className={styles.headerNav}>
-				<NavLink
-					to="/debug"
-					className={({ isActive }) => (isActive ? styles.active : "")}
-				>
-					Contract Explorer
+				<NavLink to="/" end className={navClass}>
+					./levels
 				</NavLink>
-				<a href={labPrefix()} target="_blank" rel="noreferrer">
-					Transaction Explorer
+				<NavLink to="/leaderboard" className={navClass}>
+					./leaderboard
+				</NavLink>
+				<a href={REPO_URL} target="_blank" rel="noreferrer">
+					./source ↗
 				</a>
 			</nav>
+			<XpCounter />
 			<ConnectAccount />
 		</header>
 
 		<main className={styles.main}>
-			<Outlet />
+			<NetworkGuard>
+				<Outlet />
+			</NetworkGuard>
 		</main>
 
 		<footer className={styles.footer}>
+			<span>
+				A Soroban security wargame · built at HackMeridian, Lisbon 2026
+			</span>
 			<nav className={styles.footerNav}>
-				<a
-					href="https://github.com/stellar-scaffold/cli"
-					target="_blank"
-					rel="noreferrer"
-				>
+				<a href={REPO_URL} target="_blank" rel="noreferrer">
 					GitHub
 				</a>
 				<a
-					href="https://www.youtube.com/watch?v=0syGaIn3ULk&list=PLmr3tp_7-7Gjj6gn5-bBn-QTMyaWzwOU5"
+					href="https://developers.stellar.org/docs/build/smart-contracts/overview"
 					target="_blank"
 					rel="noreferrer"
 				>
-					Tutorial
-				</a>
-				<a href="https://scaffoldstellar.org" target="_blank" rel="noreferrer">
-					View docs
+					Soroban docs
 				</a>
 			</nav>
 		</footer>

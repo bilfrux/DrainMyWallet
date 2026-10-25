@@ -6,6 +6,7 @@ import "@stellar-scaffold/app-lib/styles.css"
 import App from "./App.tsx"
 import { NotificationProvider } from "./providers/NotificationProvider.tsx"
 import { WalletProvider } from "./providers/WalletProvider.tsx"
+import "./theme.css"
 
 const queryClient = new QueryClient({
 	defaultOptions: {
