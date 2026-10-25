@@ -135,10 +135,13 @@ The site is a static single-page app. Vercel cannot build it, because the genera
 scripts/build-vercel.sh                  # clients + site for testnet, laid out in .vercel/output
 npx vercel login                         # once
 npx vercel link                          # once, creates or picks the Vercel project
+npx vercel git disconnect --yes          # once: `link` also connects the GitHub repo, see below
 npx vercel deploy --prebuilt --prod
 ```
 
 The script reads the factory id from `deployments/testnet.env` and bakes it into the build, so there is nothing to set in the Vercel dashboard. Routes such as `/level/5` are rewritten to `index.html`. Rebuild and redeploy after any contract redeployment.
+
+`vercel link` connects the GitHub repository to the project by default. Vercel would then build the repository on every push, find no site to build (the Stellar CLI is missing) and replace the live deployment with a 404 page. Run `vercel git disconnect` once, as above, so that only `vercel deploy --prebuilt` publishes the site.
 
 ### Environment variables
 
