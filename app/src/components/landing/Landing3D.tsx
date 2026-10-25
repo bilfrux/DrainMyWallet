@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
+import { levels } from "../../game/levels"
 import styles from "./Landing3D.module.css"
 import { FLASH_AT, FLASH_WIDTH, type LandingScene } from "./scene"
 
@@ -75,7 +76,7 @@ const CHAPTERS: Chapter[] = [
 	{
 		id: "final",
 		kicker: "05 / YOUR TURN",
-		title: "Six broken contracts are waiting.",
+		title: `${levels.length} broken contracts are waiting.`,
 		body: "The first one walks you through it, step by step. Everything here runs on testnet: nothing real is at stake.",
 		from: 0.95,
 		to: 2,

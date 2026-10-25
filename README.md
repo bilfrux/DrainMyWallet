@@ -24,6 +24,9 @@ Every level has exactly one intended vulnerability. Finding it is the game, so i
 | 4 | Fatal Cast | Credit yourself an absurd balance | 400 |
 | 5 | Forgetful List | Claim a perk you are banned from | 500 |
 | 6 | Counterfeit | Empty the vault (you will need to write a contract) | 600 |
+| 7 | Negative Space | Take the treasury's points for yourself | 150 |
+| 8 | Name Clash | Become admin | 350 |
+| 9 | Time Warp | Empty a vault that is locked for two months | 350 |
 
 Each level ships with an exploit as a `cargo test` in its own `test` module, so no level can turn out impossible. Write-ups of every exploit (spoilers) live on the [`solutions`](../../tree/solutions) branch, away from `main`.
 
@@ -47,7 +50,7 @@ stellar keys generate me --network testnet --fund
    ```
 4. **Click Check.** The factory calls the level's `is_solved`, and on the first win mints the level's XP to you.
 
-Levels 1, 2 and 6 pay out in `LOOT`, a classic Stellar asset, so your account needs a trustline first or the exploit fails with `Error(Contract, #13)`:
+Levels 1, 2, 6 and 9 pay out in `LOOT`, a classic Stellar asset, so your account needs a trustline first or the exploit fails with `Error(Contract, #13)`:
 
 ```bash
 stellar tx new change-trust --line LOOT:<issuer> --source-account me --network testnet
@@ -77,7 +80,7 @@ You can create a fresh instance of a level at any time. Solving a level twice mi
 - **Game asset**: `LOOT`, a classic Stellar asset issued by the game admin and used through its Stellar Asset Contract.
 - **Frontend** (`app/`, `app-lib/`): React + Vite from [Scaffold Stellar](https://github.com/stellar-scaffold/cli), using Stellar Wallets Kit. Four pages:
   - `/` is a scroll-driven 3D intro built with [three.js](https://threejs.org): a neon wallet pours XLM coins, the camera dives through it and down a tunnel to a vault door that opens onto a room of coins. It is lazy-loaded, pauses off screen, and falls back to plain cards with reduced motion or without WebGL.
-  - `/play` is the level list, Root-Me style: each level has a category (Auth, Arithmetic, Storage, Cross-contract), a difficulty, its XP and how many players have solved it (counted from the factory's events). Filter by category or difficulty, hide solved levels, or sort by level, difficulty, XP or solves.
+  - `/play` is the level list, Root-Me style: each level has a category (Auth, Arithmetic, Storage, Cross-contract, Logic), a difficulty, its XP and how many players have solved it (counted from the factory's events). Filter by category or difficulty, hide solved levels, or sort by level, difficulty, XP or solves.
   - `/level/:id` shows the story, the contract source, a hint, and the instance controls. Level 1 opens with a step-by-step walkthrough that follows the player's progress on-chain (wallet, funded account, instance, and the vault balance polled until it is empty).
   - `/leaderboard` rebuilds the player list from the factory's `level_solved` events and reads each `$DRAIN` balance.
 
@@ -97,8 +100,11 @@ Stellar **testnet**. Also in [`deployments/testnet.env`](deployments/testnet.env
 | Level 4 Wasm hash | `f39265409ce1d03658a2b8809146fcf86c34e2e7a4733b5a2f164dc199e3e913` |
 | Level 5 Wasm hash | `19174be6938611f0a95a98105c0ad7553122b9dcf7105221323420318b8bb3a9` |
 | Level 6 Wasm hash | `39c531cdca932acb2f550100555ce274e105f3b20edd0b46da136037dd26c78e` |
+| Level 7 Wasm hash | `6f402c8852e175e8e8cac6bd32fb7d30bad94657604ed4bf45d4b743d9b1ac38` |
+| Level 8 Wasm hash | `02b4af8d0ab567f873cb6c004e244f54421af65ffcb6a8db36a2c827f43fd0fc` |
+| Level 9 Wasm hash | `a3533829d4590786475b20c3b7df93eea44e41254852f862a1bced04e728dfbf` |
 
-All six levels were played end to end on these contracts with a fresh account (create instance, exploit, submit, XP minted once, a second submit mints nothing). The player `GAIX3VXN2IY354E7QCKIWP2IQUCB2QOD6AW6HILXG5SN2EYICNTTSAPM` holds the resulting 2,100 `$DRAIN` and can be looked up on [Stellar Expert](https://stellar.expert/explorer/testnet/account/GAIX3VXN2IY354E7QCKIWP2IQUCB2QOD6AW6HILXG5SN2EYICNTTSAPM).
+All nine levels were played end to end on these contracts with a fresh account (create instance, exploit, submit, XP minted once, a second submit mints nothing). The player `GAIX3VXN2IY354E7QCKIWP2IQUCB2QOD6AW6HILXG5SN2EYICNTTSAPM` holds the resulting 2,950 `$DRAIN` and can be looked up on [Stellar Expert](https://stellar.expert/explorer/testnet/account/GAIX3VXN2IY354E7QCKIWP2IQUCB2QOD6AW6HILXG5SN2EYICNTTSAPM).
 
 ### Trust and safety
 
@@ -166,7 +172,7 @@ Set in `app/.env` (see `app/.env.example`). Variables prefixed `PUBLIC_` reach t
 contracts/
 ├── factory/        deploys instances, verifies wins, mints XP
 ├── xp-token/       $DRAIN, non-transferable
-├── levels/         01-open-door … 06-counterfeit
+├── levels/         01-open-door … 09-time-warp
 ├── test-level/     fixture used only by the factory tests
 └── guess-the-number/   Scaffold example, kept as a reference
 app/, app-lib/      frontend and wallet helpers (Scaffold Stellar)
