@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
-import Typewriter from "../Typewriter"
 import styles from "./Landing3D.module.css"
 import { FLASH_AT, FLASH_WIDTH, type LandingScene } from "./scene"
 
@@ -20,7 +19,7 @@ interface Chapter {
 const CHAPTERS: Chapter[] = [
 	{
 		id: "intro",
-		kicker: "root@meridian:~# ./wargame --network testnet",
+		kicker: "DRAIN MY WALLET",
 		title: "DRAIN MY WALLET",
 		body: "A security wargame for Soroban. Break real smart contracts, on testnet, with nothing to lose.",
 		from: -1,
@@ -113,7 +112,6 @@ const Landing3D = () => {
 	const chapterRefs = useRef<(HTMLDivElement | null)[]>([])
 	const dotRefs = useRef<(HTMLButtonElement | null)[]>([])
 	const hintRef = useRef<HTMLDivElement>(null)
-	const promptRef = useRef<HTMLParagraphElement>(null)
 	const barRef = useRef<HTMLDivElement>(null)
 	const flashRef = useRef<HTMLDivElement>(null)
 	const enterRef = useRef<HTMLButtonElement>(null)
@@ -172,8 +170,6 @@ const Landing3D = () => {
 					p >= Math.max(0, c.from) - 0.02 && (!next || p < next.from - 0.02)
 				dot.dataset.on = on ? "1" : "0"
 			})
-			if (promptRef.current)
-				promptRef.current.style.opacity = String(1 - clamp01(p / 0.05))
 			if (hintRef.current)
 				hintRef.current.style.opacity = String(1 - clamp01(p / 0.04))
 			if (flashRef.current) {
@@ -350,18 +346,6 @@ const Landing3D = () => {
 						<div className={styles.panel}>{chapterBody(c)}</div>
 					</div>
 				))}
-
-				{/* A terminal log line in the corner: flavour, out of the way of the title */}
-				<p ref={promptRef} className={styles.corner}>
-					<span className={styles.host}>root@meridian</span>
-					<span className={styles.sep}>:~#</span>{" "}
-					<Typewriter
-						text="./wargame --network testnet"
-						speedMs={45}
-						className={styles.cmd}
-					/>
-					<span className={styles.caret} aria-hidden="true" />
-				</p>
 
 				<div ref={hintRef} className={styles.scrollHint} aria-hidden="true">
 					<span>scroll</span>
