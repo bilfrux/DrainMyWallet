@@ -13,6 +13,7 @@ import AccessOverlay, { type CheckOutcome } from "../components/AccessOverlay"
 import GuidedTour from "../components/guide/GuidedTour"
 import SourceView from "../components/SourceView"
 import Terminal from "../components/Terminal"
+import TimedNotice from "../components/TimedNotice"
 import TrustlineStep from "../components/TrustlineStep"
 import Typewriter from "../components/Typewriter"
 import { getLevel, pad } from "../game/levels"
@@ -115,6 +116,8 @@ const LevelPage = () => {
 					<span className={styles.prompt}>objective:</span> {level.goal}
 				</p>
 			</header>
+
+			{level.timed && <TimedNotice instanceId={instanceId} />}
 
 			{level.guided ? (
 				<GuidedTour

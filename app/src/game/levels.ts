@@ -10,6 +10,8 @@ export interface Level {
 	bonus?: boolean
 	/** Shows the step-by-step walkthrough instead of the bare instance panel */
 	guided?: boolean
+	/** The exploit takes real waiting time: show the wait notice */
+	timed?: boolean
 	/**
 	 * The exploit pays out LOOT, a classic asset: the player's account needs a
 	 * trustline first or the transfer fails with `Error(Contract, #13)`.
@@ -86,6 +88,7 @@ const LEVELS: Omit<Level, "source">[] = [
 		hint: "Temporary storage has a time-to-live. What is the ban list worth once its entry expires?",
 		xp: 500,
 		bonus: true,
+		timed: true,
 	},
 	{
 		id: 6,
