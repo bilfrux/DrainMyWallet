@@ -82,7 +82,7 @@ const coinTexture = () => {
 	mark.width = mark.height = size
 	const m = mark.getContext("2d")!
 	m.scale(unit, unit)
-	m.fillStyle = "#fff"
+	m.fillStyle = "#00ff41"
 	m.beginPath()
 	m.arc(16, 16, 16, 0, Math.PI * 2)
 	m.fill()
@@ -193,10 +193,17 @@ export const createLandingScene = (
 			neon(3.4),
 		),
 	)
+	// The slot the coins slip out of: a bright bar along the lower front edge
+	const slotMaterial = neon(7, 0.9)
+	const slot = new LineSegments2(
+		segmentsOf([-2.1, -1.9, 0.62, 2.1, -1.9, 0.62]),
+		slotMaterial,
+	)
+	wallet.add(slot)
 	scene.add(wallet)
 
 	// ── Drain: coins tumbling out of the wallet ───────────────────────────
-	const count = opts.lowPower ? 30 : 70
+	const count = opts.lowPower ? 36 : 90
 	const seeds = new Float32Array(count * 4)
 	for (let i = 0; i < seeds.length; i++) seeds[i] = Math.random()
 	const drainGeometry = new THREE.BufferGeometry()
@@ -225,20 +232,20 @@ export const createLandingScene = (
 			void main() {
 				float t = fract(seed.x + uTime * (0.1 + 0.06 * seed.y));
 				vec3 p;
-				// Thrown out from inside the wallet, over its flap, then falling
+				// Slips out through the wallet's lower edge, then falls in a fan
 				float side = seed.z - 0.5;
-				p.x = side * (2.0 + 30.0 * t) * (0.55 + 0.45 * seed.y);
-				p.y = 0.3 + 14.0 * t - 22.0 * t * t;
+				p.x = side * (1.6 + 46.0 * t) * (0.6 + 0.4 * seed.y);
+				p.y = -1.1 - 2.4 * t - 11.0 * t * t;
 				p.z = (seed.w - 0.5) * 1.6;
 				vec4 mv = modelViewMatrix * vec4(p, 1.0);
 				gl_Position = projectionMatrix * mv;
-				// Pops up small from inside the wallet and grows as it leaves
-				float grow = smoothstep(0.0, 0.14, t);
-				gl_PointSize = (1.0 + 0.8 * seed.y) * uScale / -mv.z * (0.35 + 0.65 * grow);
+				// Small while still inside the wallet, full size once it is out
+				float grow = smoothstep(0.0, 0.12, t);
+				gl_PointSize = (1.0 + 0.8 * seed.y) * uScale / -mv.z * (0.3 + 0.7 * grow);
 				// Coins falling through the title's column vanish; the ones spilling to the sides keep going
-				float below = smoothstep(-2.1, -3.2, p.y);
-				float centre = 1.0 - smoothstep(5.5, 10.0, abs(p.x));
-				vAlpha = smoothstep(0.0, 0.03, t) * (1.0 - smoothstep(0.62, 0.95, t)) * (1.0 - below * centre);
+				float below = smoothstep(-3.0, -3.9, p.y);
+				float centre = 1.0 - smoothstep(6.0, 9.5, abs(p.x));
+				vAlpha = smoothstep(0.0, 0.03, t) * (1.0 - smoothstep(0.6, 0.95, t)) * (1.0 - below * centre);
 				vSpin = uTime * (1.2 + 1.8 * seed.y) + seed.w * 6.2831;
 				vTilt = (seed.z - 0.5) * 0.7;
 			}
@@ -405,6 +412,7 @@ export const createLandingScene = (
 		wallet.scale.setScalar(lerp(0.88, 1, clamp01(progress / 0.19)))
 		drain.position.y = wallet.position.y
 		drain.visible = progress < 0.22
+		slotMaterial.opacity = 0.55 + 0.35 * Math.sin(time * 3)
 		// The wallet fades once we are inside it
 		const gone = clamp01((z - -2) / 10)
 		wallet.visible = gone > 0.01 || z > -4

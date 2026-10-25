@@ -283,6 +283,11 @@
 }
 
 .ghost {
+	text-decoration: none;
+	font-size: 0.8rem;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	display: inline-block;
 	background: rgba(0, 0, 0, 0.5);
 	border: 1px solid var(--color-border);
 	color: var(--color-text-muted);
