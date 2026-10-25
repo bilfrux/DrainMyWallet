@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
+import Typewriter from "../Typewriter"
 import styles from "./Landing3D.module.css"
 import { FLASH_AT, FLASH_WIDTH, type LandingScene } from "./scene"
 
@@ -269,7 +270,21 @@ const Landing3D = () => {
 
 	const chapterBody = (c: Chapter) => (
 		<>
-			<p className={styles.kicker}>{c.kicker}</p>
+			{c.id === "intro" ? (
+				// A terminal prompt, typed out once: flavour, kept legible on a dark plate
+				<p className={`${styles.kicker} ${styles.promptChip}`}>
+					<span className={styles.host}>root@meridian</span>
+					<span className={styles.sep}>:~#</span>{" "}
+					<Typewriter
+						text="./wargame --network testnet"
+						speedMs={45}
+						className={styles.cmd}
+					/>
+					<span className={styles.caret} aria-hidden="true" />
+				</p>
+			) : (
+				<p className={styles.kicker}>{c.kicker}</p>
+			)}
 			{c.id === "intro" ? (
 				<h1 className={styles.hero} data-text={c.title}>
 					{c.title}

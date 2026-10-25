@@ -484,3 +484,55 @@
 .finalChapter {
 	padding-top: var(--footer-h, 3.6rem);
 }
+
+/* The hero's terminal prompt: small and quiet, but on its own dark plate so the
+   coins and the wallet behind it never make it hard to read. */
+.promptChip {
+	display: inline-block;
+	margin: 0 0 1.1rem;
+	padding: 0.4rem 0.9rem;
+	background: rgba(0, 10, 3, 0.82);
+	border: 1px solid rgba(0, 255, 65, 0.3);
+	border-left: 3px solid var(--color-accent);
+	text-transform: none;
+	letter-spacing: 0.03em;
+	font-size: 0.85rem;
+	text-align: left;
+	backdrop-filter: blur(4px);
+}
+
+.host {
+	color: #6fe48a;
+}
+
+.sep {
+	color: var(--color-accent);
+}
+
+.cmd {
+	color: #e4ffea;
+}
+
+/* One steady blinking caret, after the command; the typewriter's own is hidden */
+.promptChip :global(.cursor) {
+	display: none;
+}
+
+.caret::after {
+	content: "█";
+	margin-left: 0.2em;
+	color: var(--color-accent);
+	animation: caret-blink 1s steps(1) infinite;
+}
+
+@keyframes caret-blink {
+	50% {
+		opacity: 0;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.caret::after {
+		animation: none;
+	}
+}
