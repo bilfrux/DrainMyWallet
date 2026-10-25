@@ -65,38 +65,25 @@ const segmentsOf = (points: number[]) => {
 }
 
 /**
- * A Stellar-lumens style coin: ring, slanted trail and two sparks. Drawn once
- * on a canvas and used as the sprite of every glyph pouring out of the wallet.
+ * The Stellar Lumens (XLM) coin: a solid disc with the Stellar mark cut out
+ * of it. The outline is the public XLM icon from the cryptocurrency-icons set
+ * (32x32 viewBox), drawn once on a canvas and shared by every coin.
  */
+const XLM_PATH =
+	"M16 32C7.163 32 0 24.837 0 16S7.163 0 16 0s16 7.163 16 16-7.163 16-16 16zm7.13-22.708l-2.4 1.224-11.598 5.907A6.909 6.909 0 0119.35 9.498l1.374-.7.205-.105a8.439 8.439 0 00-13.371 7.472 1.535 1.535 0 01-.834 1.484l-.725.37v1.724l2.134-1.088.691-.353.681-.347 12.226-6.23 1.374-.699 2.84-1.447V7.856L23.13 9.292zm2.816 2.012L10.201 19.32l-1.374.7L6 21.463v1.723l2.808-1.43 2.401-1.224 11.61-5.916a6.909 6.909 0 01-10.229 6.93l-.085.045-1.49.76a8.439 8.439 0 0013.372-7.475 1.536 1.536 0 01.833-1.483l.726-.37v-1.718z"
+
 const coinTexture = () => {
-	const size = 128
+	const size = 256
 	const canvas = document.createElement("canvas")
 	canvas.width = canvas.height = size
 	const ctx = canvas.getContext("2d")!
-	ctx.strokeStyle = "#fff"
+	ctx.scale(size / 32, size / 32)
 	ctx.fillStyle = "#fff"
-	ctx.lineCap = "round"
-	ctx.lineWidth = 9
-	ctx.beginPath()
-	ctx.arc(64, 64, 52, 0, Math.PI * 2)
-	ctx.stroke()
-	// The slanted trail through the ring
-	ctx.lineWidth = 8
-	ctx.beginPath()
-	ctx.moveTo(30, 82)
-	ctx.quadraticCurveTo(62, 70, 98, 44)
-	ctx.stroke()
-	// Two sparks
-	for (const [x, y, r] of [
-		[46, 44, 7],
-		[84, 86, 6],
-	] as const) {
-		ctx.beginPath()
-		ctx.arc(x, y, r, 0, Math.PI * 2)
-		ctx.fill()
-	}
+	ctx.fill(new Path2D(XLM_PATH))
 	const texture = new THREE.CanvasTexture(canvas)
 	texture.colorSpace = THREE.SRGBColorSpace
+	texture.generateMipmaps = true
+	texture.minFilter = THREE.LinearMipmapLinearFilter
 	return texture
 }
 
@@ -187,7 +174,7 @@ export const createLandingScene = (
 	scene.add(wallet)
 
 	// ── Drain: coins tumbling out of the wallet ───────────────────────────
-	const count = opts.lowPower ? 55 : 130
+	const count = opts.lowPower ? 30 : 70
 	const seeds = new Float32Array(count * 4)
 	for (let i = 0; i < seeds.length; i++) seeds[i] = Math.random()
 	const drainGeometry = new THREE.BufferGeometry()
@@ -224,7 +211,7 @@ export const createLandingScene = (
 				p.z = (seed.w - 0.5) * 1.6;
 				vec4 mv = modelViewMatrix * vec4(p, 1.0);
 				gl_Position = projectionMatrix * mv;
-				gl_PointSize = (0.55 + 0.5 * seed.y) * uScale / -mv.z;
+				gl_PointSize = (1.0 + 0.8 * seed.y) * uScale / -mv.z;
 				// Coins in the title's column vanish; the ones spilling to the sides keep falling
 				float below = smoothstep(-2.1, -3.2, p.y);
 				float centre = 1.0 - smoothstep(5.5, 10.0, abs(p.x));
@@ -247,7 +234,7 @@ export const createLandingScene = (
 				uv.x /= flip;
 				if (abs(uv.x) > 0.5 || abs(uv.y) > 0.5) discard;
 				float a = texture2D(uMap, uv + 0.5).a;
-				gl_FragColor = vec4(0.35, 1.0, 0.5, a * vAlpha * (0.8 + 0.2 * flip));
+				gl_FragColor = vec4(0.0, 0.85, 0.2, a * vAlpha * (0.5 + 0.2 * flip));
 			}
 		`,
 	})
