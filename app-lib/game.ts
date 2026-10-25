@@ -200,6 +200,20 @@ export const fetchVaultBalance = async (
 	return BigInt(unwrap<bigint>(tx.result))
 }
 
+/** Level 5: whether `member` is still on the instance's ban list. */
+interface BanClient {
+	is_banned: Call<{ member: string }, boolean>
+}
+
+export const fetchBanned = async (
+	instanceId: string,
+	member: string,
+): Promise<boolean> => {
+	const client = await getClient<BanClient>(instanceId)
+	const tx = await client.is_banned({ member })
+	return Boolean(unwrap<boolean>(tx.result))
+}
+
 /** The player's $DRAIN balance. */
 export const fetchXp = async (player: string): Promise<bigint> => {
 	const client = await getClient<XpClient>(await resolveXpToken())
