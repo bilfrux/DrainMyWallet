@@ -4,10 +4,11 @@ import { Link } from "react-router-dom"
 import Terminal from "../components/Terminal"
 import Typewriter from "../components/Typewriter"
 import { REPO_URL } from "../game/config"
-import { levels, pad } from "../game/levels"
+import { type Level, levels, pad } from "../game/levels"
 import { useCountUp } from "../hooks/useCountUp"
 import {
 	useGameStatus,
+	useRegisteredLevels,
 	useInstances,
 	useProgress,
 	useXp,
@@ -15,12 +16,13 @@ import {
 import { useWallet } from "../hooks/useWallet"
 import styles from "./Home.module.css"
 
-type Status = "solved" | "in-progress" | "locked"
+type Status = "solved" | "in-progress" | "locked" | "soon"
 
 const STATUS_LABEL: Record<Status, string> = {
 	solved: "[ PWNED ]",
 	"in-progress": "[ IN PROGRESS ]",
 	locked: "[ LOCKED ]",
+	soon: "[ SOON ]",
 }
 
 const PITCH =
@@ -32,16 +34,23 @@ const Home: React.FC = () => {
 	const { data: solved } = useProgress()
 	const { data: instances } = useInstances(levels.map((l) => l.id))
 	const { data: xp } = useXp()
+	const { data: registered } = useRegisteredLevels()
 	const xpShown = useCountUp(Number(xp ?? 0n))
 
 	const statusOf = (id: number): Status =>
 		solved?.includes(id)
 			? "solved"
-			: instances?.get(id)
-				? "in-progress"
-				: "locked"
+			: registered && !registered.has(id)
+				? "soon"
+				: instances?.get(id)
+					? "in-progress"
+					: "locked"
 
-	const maxXp = levels.reduce((sum, l) => sum + l.xp, 0)
+	// The factory's reward wins once the level is registered
+	const xpOf = (level: Level) =>
+		Number(registered?.get(level.id) ?? BigInt(level.xp))
+
+	const maxXp = levels.reduce((sum, l) => sum + xpOf(l), 0)
 
 	return (
 		<div className={styles.Home}>
@@ -117,7 +126,7 @@ const Home: React.FC = () => {
 										{level.bonus && <span className={styles.bonus}>bonus</span>}
 									</span>
 									<span className={styles.levelGoal}>{level.goal}</span>
-									<span className={styles.levelXp}>+{level.xp} XP</span>
+									<span className={styles.levelXp}>+{xpOf(level)} XP</span>
 									<span className={styles.levelStatus}>
 										{STATUS_LABEL[status]}
 									</span>
