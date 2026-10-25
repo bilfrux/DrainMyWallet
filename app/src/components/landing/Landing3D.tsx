@@ -124,6 +124,15 @@ const Landing3D = () => {
 		const canvas = canvasRef.current
 		if (!section || !canvas) return
 
+		// The closing panel is centred in the space above the footer
+		const footer = document.querySelector("footer")
+		const measureFooter = () =>
+			section.style.setProperty(
+				"--footer-h",
+				`${footer?.getBoundingClientRect().height ?? 58}px`,
+			)
+		measureFooter()
+
 		let scene: LandingScene | undefined
 		let cancelled = false
 		let target = 0
@@ -191,6 +200,7 @@ const Landing3D = () => {
 			)
 
 		const onResize = () => {
+			measureFooter()
 			const stage = canvas.parentElement
 			if (stage) scene?.resize(stage.clientWidth, stage.clientHeight)
 			readScroll()
@@ -333,7 +343,7 @@ const Landing3D = () => {
 						ref={(el) => {
 							chapterRefs.current[i] = el
 						}}
-						className={`${styles.chapter} ${styles[c.side]} ${c.id === "intro" ? styles.bottom : ""} ${c.id === "grant" ? styles.grantChapter : ""}`}
+						className={`${styles.chapter} ${styles[c.side]} ${c.id === "intro" ? styles.bottom : ""} ${c.id === "grant" ? styles.grantChapter : ""} ${c.id === "final" ? styles.finalChapter : ""}`}
 						style={i === 0 ? undefined : { opacity: 0, visibility: "hidden" }}
 					>
 						<div className={styles.panel}>{chapterBody(c)}</div>
