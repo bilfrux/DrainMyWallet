@@ -51,3 +51,4 @@ deployments/local.env
 
 # Vercel link and prebuilt output
 .vercel
+.env*

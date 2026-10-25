@@ -4,6 +4,8 @@
 
 > Educational CTF. **Testnet only. No real funds, ever.** The site never signs an exploit for you: it only creates your instance and checks the result.
 
+**Live site: https://drainmywallet.vercel.app** (Stellar testnet)
+
 Built at HackMeridian, Lisbon, 25–26 Oct 2026 (Genesis track).
 
 ## The problem
