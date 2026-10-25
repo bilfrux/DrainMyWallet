@@ -485,20 +485,17 @@
 	padding-top: var(--footer-h, 3.6rem);
 }
 
-/* The hero's terminal prompt: small and quiet, but on its own dark plate so the
-   coins and the wallet behind it never make it hard to read. */
-.promptChip {
-	display: inline-block;
-	margin: 0 0 1.1rem;
-	padding: 0.4rem 0.9rem;
-	background: rgba(0, 10, 3, 0.82);
-	border: 1px solid rgba(0, 255, 65, 0.3);
-	border-left: 3px solid var(--color-accent);
-	text-transform: none;
+/* The hero's terminal prompt: a log line in the top-left corner of the stage,
+   no plate and no frame, fading out as soon as the page scrolls. */
+.corner {
+	position: absolute;
+	top: 1.1rem;
+	left: clamp(1rem, 3vw, 2.4rem);
+	z-index: 2;
+	margin: 0;
+	font-size: 0.8rem;
 	letter-spacing: 0.03em;
-	font-size: 0.85rem;
-	text-align: left;
-	backdrop-filter: blur(4px);
+	pointer-events: none;
 }
 
 .host {
@@ -514,7 +511,7 @@
 }
 
 /* One steady blinking caret, after the command; the typewriter's own is hidden */
-.promptChip :global(.cursor) {
+.corner :global(.cursor) {
 	display: none;
 }
 
