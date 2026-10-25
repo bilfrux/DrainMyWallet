@@ -34,6 +34,14 @@ export async function fundAccount(
 			"detail" in body &&
 			typeof body.detail === "string"
 		) {
+			// Friendbot funds an address once. Asking again is harmless: say so
+			// instead of showing an error for something that is already fine.
+			if (/already funded/i.test(body.detail)) {
+				return {
+					ok: true,
+					message: "Your account already has test XLM, nothing to do.",
+				}
+			}
 			return { ok: false, message: `Error funding account: ${body.detail}` }
 		}
 		return { ok: false, message: "Error funding account: Unknown error" }
