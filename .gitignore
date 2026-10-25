@@ -45,3 +45,6 @@ app-lib/clients/*
 
 # TypeScript incremental build info
 *.tsbuildinfo
+
+# local network deployments are throwaway
+deployments/local.env

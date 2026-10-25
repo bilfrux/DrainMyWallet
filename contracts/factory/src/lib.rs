@@ -22,6 +22,20 @@ pub struct Level {
     pub xp_reward: i128,
 }
 
+/// A player's current instance of a level. `nonce` counts the instances
+/// deployed so far, so the next one gets a fresh salt.
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+struct PlayerInstance {
+    address: Address,
+    nonce: u32,
+}
+
+// Storage writes are rent paid by the player, so player calls never extend
+// TTLs: entries live for the network's minimum persistent TTL (about a week
+// on testnet), and anyone can extend them with `stellar contract extend`.
+// Extending the instance from here would also extend the factory's Wasm,
+// which costs thousands of testnet XLM per call.
 #[contracttype]
 enum DataKey {
     Admin,
@@ -29,14 +43,9 @@ enum DataKey {
     XpToken,
     Level(u32),
     Instance(Address, u32),
-    Nonce(Address, u32),
-    Solved(Address, u32),
     Progress(Address),
 }
 
-const DAY_IN_LEDGERS: u32 = 17_280;
-const BUMP: u32 = 30 * DAY_IN_LEDGERS;
-const THRESHOLD: u32 = BUMP - 15 * DAY_IN_LEDGERS;
 const IS_SOLVED: Symbol = symbol_short!("is_solved");
 
 #[contractclient(name = "XpTokenClient")]
@@ -96,14 +105,14 @@ impl Factory {
         if funding < 0 || xp_reward <= 0 {
             panic!("invalid level config");
         }
-        let key = DataKey::Level(level_id);
         let level = Level {
             wasm_hash,
             funding,
             xp_reward,
         };
-        env.storage().persistent().set(&key, &level);
-        Self::bump(env, &key);
+        env.storage()
+            .persistent()
+            .set(&DataKey::Level(level_id), &level);
     }
 
     /// Deploys a fresh instance of `level_id` for `player`, funds it and
@@ -113,8 +122,12 @@ impl Factory {
         player.require_auth();
         let level = Self::level(env, level_id).expect("unknown level");
 
-        let nonce_key = DataKey::Nonce(player.clone(), level_id);
-        let nonce: u32 = env.storage().persistent().get(&nonce_key).unwrap_or(0);
+        let instance_key = DataKey::Instance(player.clone(), level_id);
+        let nonce = env
+            .storage()
+            .persistent()
+            .get::<_, PlayerInstance>(&instance_key)
+            .map_or(0, |current| current.nonce);
         let salt = Self::salt(env, &player, level_id, nonce);
 
         let token = Self::token(env);
@@ -134,12 +147,11 @@ impl Factory {
             );
         }
 
-        env.storage().persistent().set(&nonce_key, &(nonce + 1));
-        Self::bump(env, &nonce_key);
-        let instance_key = DataKey::Instance(player.clone(), level_id);
-        env.storage().persistent().set(&instance_key, &instance);
-        Self::bump(env, &instance_key);
-        env.storage().instance().extend_ttl(THRESHOLD, BUMP);
+        let current = PlayerInstance {
+            address: instance.clone(),
+            nonce: nonce + 1,
+        };
+        env.storage().persistent().set(&instance_key, &current);
 
         InstanceCreated {
             player,
@@ -153,15 +165,16 @@ impl Factory {
     pub fn instance_of(env: &Env, player: Address, level_id: u32) -> Option<Address> {
         env.storage()
             .persistent()
-            .get(&DataKey::Instance(player, level_id))
+            .get::<_, PlayerInstance>(&DataKey::Instance(player, level_id))
+            .map(|current| current.address)
     }
 
     /// Checks the player's instance. The first win records the level and
     /// mints its XP; later calls return true without minting again.
     pub fn submit(env: &Env, player: Address, level_id: u32) -> bool {
         player.require_auth();
-        let solved_key = DataKey::Solved(player.clone(), level_id);
-        if env.storage().persistent().has(&solved_key) {
+        let mut progress = Self::progress(env, player.clone());
+        if progress.contains(level_id) {
             return true;
         }
 
@@ -173,13 +186,10 @@ impl Factory {
             return false;
         }
 
-        env.storage().persistent().set(&solved_key, &true);
-        Self::bump(env, &solved_key);
-        let progress_key = DataKey::Progress(player.clone());
-        let mut progress = Self::progress(env, player.clone());
         progress.push_back(level_id);
-        env.storage().persistent().set(&progress_key, &progress);
-        Self::bump(env, &progress_key);
+        env.storage()
+            .persistent()
+            .set(&DataKey::Progress(player.clone()), &progress);
 
         XpTokenClient::new(env, &Self::xp_token(env)).mint(&player, &level.xp_reward);
 
@@ -229,10 +239,6 @@ impl Factory {
         data.extend_from_array(&level_id.to_be_bytes());
         data.extend_from_array(&nonce.to_be_bytes());
         env.crypto().sha256(&data).to_bytes()
-    }
-
-    fn bump(env: &Env, key: &DataKey) {
-        env.storage().persistent().extend_ttl(key, THRESHOLD, BUMP);
     }
 }
 

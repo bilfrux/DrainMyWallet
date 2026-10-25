@@ -68,3 +68,19 @@ contracts:
       # mainnet:
       #   type: contract
       #   source: C...
+
+  # Game contracts. They are deployed by scripts/deploy.sh, not by Scaffold
+  # (the factory needs the game asset's SAC and the XP token needs the
+  # factory's address), so every network points at an existing deployment.
+  # Ids come from deployments/<network>.env.
+  factory:
+    networks:
+      testnet:
+        type: contract
+        source: CBESXH256AWI7FBGIQ5Z3ZKLJOFQ4CQO33A5LMWVZUHJH3JFW4KJXVFW
+
+  xp-token:
+    networks:
+      testnet:
+        type: contract
+        source: CDQMYDTJVXKS4NPMSRORWAHB6R457YKGHXPUZGXJIDCHARF4RMULYYND
