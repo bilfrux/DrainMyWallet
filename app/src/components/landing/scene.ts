@@ -137,6 +137,7 @@ export const createLandingScene = (
 	renderer.setClearColor(0x000802, 1)
 
 	const scene = new THREE.Scene()
+	const background = new THREE.Color(0x000802)
 	scene.fog = new THREE.FogExp2(0x000802, 0.017)
 	const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 200)
 	camera.position.set(0, 0, CAMERA_START)
@@ -416,6 +417,31 @@ export const createLandingScene = (
 		}
 	})
 	const placer = new THREE.Object3D()
+
+	// A huge, dim vault wheel far behind the coins, so the room has a back wall
+	const backWheel = new THREE.Group()
+	backWheel.position.z = VAULT_ROOM - 40
+	const backMaterial = neon(2.4, 0)
+	for (const radius of [26, 20, 14, 6]) {
+		backWheel.add(
+			new LineSegments2(segmentsOf(circlePoints(radius, 96)), backMaterial),
+		)
+	}
+	const backSpokes: number[] = []
+	for (let i = 0; i < 8; i++) {
+		const a = (i / 8) * Math.PI * 2
+		backSpokes.push(
+			Math.cos(a) * 6,
+			Math.sin(a) * 6,
+			0,
+			Math.cos(a) * 26,
+			Math.sin(a) * 26,
+			0,
+		)
+	}
+	backWheel.add(new LineSegments2(segmentsOf(backSpokes), backMaterial))
+	backWheel.visible = false
+	scene.add(backWheel)
 	scene.add(fieldMesh)
 
 	// ── Post-processing: bloom makes the lines glow ──────────────────────
@@ -502,6 +528,18 @@ export const createLandingScene = (
 		// The coin field fades in as the camera comes through the door
 		fieldMaterial.opacity = smooth(FLASH_AT, DOOR_THROUGH + 0.03, progress)
 		fieldMesh.visible = progress > FLASH_AT
+		// The room: a deep green instead of black, with a slowly turning back wall
+		const room = smooth(FLASH_AT, DOOR_THROUGH + 0.01, progress)
+		backWheel.visible = room > 0.01
+		backMaterial.opacity = 0.42 * room
+		backWheel.rotation.z = time * 0.05
+		background.setRGB(
+			lerp(0, 0.004, room),
+			lerp(0.03, 0.12, room),
+			lerp(0.008, 0.045, room),
+		)
+		renderer.setClearColor(background, 1)
+		;(scene.fog as THREE.FogExp2).color.copy(background)
 		if (fieldMesh.visible) {
 			field.forEach((c, i) => {
 				placer.position.set(

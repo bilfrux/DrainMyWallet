@@ -76,7 +76,7 @@ const CHAPTERS: Chapter[] = [
 		id: "final",
 		kicker: "05 / YOUR TURN",
 		title: "Six broken contracts are waiting.",
-		body: "Start with a guided level, or go straight to the list. Everything here runs on testnet: nothing real is at stake.",
+		body: "The first one walks you through it, step by step. Everything here runs on testnet: nothing real is at stake.",
 		from: 0.95,
 		to: 2,
 		side: "center",
@@ -114,6 +114,7 @@ const Landing3D = () => {
 	const hintRef = useRef<HTMLDivElement>(null)
 	const barRef = useRef<HTMLDivElement>(null)
 	const flashRef = useRef<HTMLDivElement>(null)
+	const lightRef = useRef<HTMLDivElement>(null)
 	const enterRef = useRef<HTMLButtonElement>(null)
 	const [animated] = useState(shouldAnimate)
 	const [loading, setLoading] = useState(animated)
@@ -172,6 +173,11 @@ const Landing3D = () => {
 			})
 			if (hintRef.current)
 				hintRef.current.style.opacity = String(1 - clamp01(p / 0.04))
+			// The vault room's light comes up after the flash, with the coins
+			if (lightRef.current) {
+				const t = clamp01((p - 0.94) / 0.04)
+				lightRef.current.style.opacity = String(t * t * (3 - 2 * t))
+			}
 			if (flashRef.current) {
 				const f = clamp01(1 - Math.abs(p - FLASH_AT) / FLASH_WIDTH)
 				flashRef.current.style.opacity = String(f * f)
@@ -302,11 +308,8 @@ const Landing3D = () => {
 			)}
 			{c.id === "final" && (
 				<div className={styles.actions}>
-					<button className={styles.cta} onClick={enter}>
-						Enter the game ▸
-					</button>
-					<Link to="/level/1" className={styles.ghost}>
-						Start to drain →
+					<Link to="/level/1" className={styles.cta}>
+						Start to drain ▸
 					</Link>
 				</div>
 			)}
@@ -335,6 +338,7 @@ const Landing3D = () => {
 				<canvas ref={canvasRef} className={styles.canvas} aria-hidden="true" />
 				<div className={styles.vignette} aria-hidden="true" />
 				<div ref={flashRef} className={styles.flash} aria-hidden="true" />
+				<div ref={lightRef} className={styles.vaultLight} aria-hidden="true" />
 				{loading && <p className={styles.loading}>booting renderer…</p>}
 
 				{CHAPTERS.map((c, i) => (
