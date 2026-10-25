@@ -67,17 +67,17 @@ const CHAPTERS: Chapter[] = [
 		kicker: "// vault.lock --release",
 		title: "ACCESS GRANTED",
 		body: "",
-		from: 0.745,
-		to: 0.855,
+		from: 0.83,
+		to: 0.905,
 		side: "center",
-		fade: 0.02,
+		fade: 0.015,
 	},
 	{
 		id: "final",
 		kicker: "05 / YOUR TURN",
 		title: "Six broken contracts are waiting.",
 		body: "Start with a guided level, or go straight to the list. Everything here runs on testnet: nothing real is at stake.",
-		from: 0.93,
+		from: 0.95,
 		to: 2,
 		side: "center",
 	},
@@ -170,7 +170,7 @@ const Landing3D = () => {
 			if (barRef.current) barRef.current.style.transform = `scaleY(${p})`
 			// The floating button takes over once the hero's own button scrolls away
 			if (enterRef.current) {
-				const v = clamp01((p - 0.05) / 0.05) * clamp01((0.9 - p) / 0.03)
+				const v = clamp01((p - 0.05) / 0.05) * clamp01((0.86 - p) / 0.03)
 				enterRef.current.style.opacity = String(v)
 				enterRef.current.style.pointerEvents = v > 0.5 ? "auto" : "none"
 			}
@@ -243,7 +243,12 @@ const Landing3D = () => {
 		const c = CHAPTERS[index]
 		if (!section || !c) return
 		const span = section.offsetHeight - window.innerHeight
-		const p = c.from < 0 ? 0 : Math.min(0.98, c.from + 0.07)
+		const p =
+			c.from < 0
+				? 0
+				: c.to > 1
+					? Math.min(0.995, c.from + 0.02)
+					: (c.from + c.to) / 2
 		window.scrollTo({
 			top: section.offsetTop + span * p,
 			behavior: "smooth",
