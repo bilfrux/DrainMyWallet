@@ -465,3 +465,24 @@
 		rgba(0, 255, 65, 0) 80%
 	);
 }
+
+/* "ACCESS GRANTED" sits on the brightest part of the whole intro (the opening
+   vault door), so it gets a near-opaque plate and a steady, glow-free title. */
+.grantChapter .panel {
+	padding: 2rem 3rem;
+	background: rgba(0, 6, 2, 0.94);
+	border: 2px solid var(--color-accent);
+	box-shadow:
+		0 0 0 6px rgba(0, 6, 2, 0.6),
+		0 0 40px rgba(0, 255, 65, 0.35);
+}
+
+.grant {
+	margin: 0;
+	font-size: clamp(2.8rem, 8vw, 5.6rem);
+	letter-spacing: 0.1em;
+	color: #eafff0;
+	text-shadow:
+		0 2px 0 #000,
+		0 0 18px rgba(0, 255, 65, 0.7);
+}
