@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="app/public/logo.svg" alt="DrainMyWallet logo" width="160">
+</p>
+
 # DrainMyWallet
 
 **A security wargame for Soroban.** Each level is a deliberately vulnerable smart contract. You deploy your own instance on Stellar **testnet**, exploit it from the command line, then ask the game to verify the win on-chain. Win a level, earn non-transferable `$DRAIN` XP.
