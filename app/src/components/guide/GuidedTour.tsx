@@ -127,7 +127,7 @@ const GuidedTour = ({
 						On testnet the fees are paid in <strong>fake XLM</strong>. A free
 						service called Friendbot hands you some: one click.
 					</p>
-					<FundAccountButton />
+					<FundAccountButton whenFunded="note" />
 				</>
 			),
 		},
