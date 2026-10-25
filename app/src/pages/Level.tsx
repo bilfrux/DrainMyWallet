@@ -181,8 +181,10 @@ const LevelPage = () => {
 								</>
 							)}
 							<p className={styles.small}>
-								The site never signs an exploit for you. It only deploys
-								instances and verifies wins.
+								Deploying costs about 73 testnet XLM of storage rent: use{" "}
+								<em>Fund account</em> (Friendbot) if you run low. The site never
+								signs an exploit for you. It only deploys instances and verifies
+								wins.
 							</p>
 						</>
 					)}
