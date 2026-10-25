@@ -26,12 +26,14 @@ const GREEN = 0x00ff41
 const CAMERA_START = 17
 /** Scroll progress at which the camera reaches the vault door, and the one at which it is through. */
 const DOOR_APPROACH = 0.78
-const DOOR_THROUGH = 0.92
+/** The camera waits in front of the door while it finishes spinning and "access granted" shows */
+const HOLD_END = 0.9
+const DOOR_THROUGH = 0.97
 const TUNNEL_END = -72
 const VAULT_ROOM = -106
 /** Progress of the flash as the camera crosses the door; the page overlay uses the same value */
-export const FLASH_AT = 0.87
-export const FLASH_WIDTH = 0.035
+export const FLASH_AT = 0.934
+export const FLASH_WIDTH = 0.03
 const smooth = (a: number, b: number, v: number) => {
 	const t = clamp01((v - a) / (b - a))
 	return t * t * (3 - 2 * t)
@@ -451,12 +453,19 @@ export const createLandingScene = (
 			const q = progress / DOOR_APPROACH
 			eased = lerp(q, q * q * (3 - 2 * q), 0.45)
 			z = lerp(CAMERA_START, TUNNEL_END, eased)
-		} else {
+		} else if (progress < HOLD_END) {
 			eased = 1
 			z = lerp(
 				TUNNEL_END,
+				TUNNEL_END - 4,
+				smooth(DOOR_APPROACH, HOLD_END, progress),
+			)
+		} else {
+			eased = 1
+			z = lerp(
+				TUNNEL_END - 4,
 				VAULT_ROOM,
-				smooth(DOOR_APPROACH, DOOR_THROUGH, progress),
+				smooth(HOLD_END, DOOR_THROUGH, progress),
 			)
 		}
 		camera.position.x += (pointerX * 1.6 - camera.position.x) * 0.05
@@ -482,9 +491,11 @@ export const createLandingScene = (
 		rings.children.forEach((ring, i) => {
 			ring.rotation.z = i * 0.21 + time * 0.12 * (i % 2 ? 1 : -1)
 		})
-		const open = smooth(0.76, FLASH_AT, progress)
-		wheel.rotation.z = time * 0.25 - progress * 4 + open * open * 14
-		// The door swells and splits as the camera reaches it, then is gone
+		// The wheel spins up, slows and stops dead before "access granted"
+		const spin = smooth(0.7, 0.83, progress)
+		wheel.rotation.z = lerp(time * 0.25 - progress * 4, Math.PI * 6, spin)
+		const open = smooth(0.74, FLASH_AT, progress)
+		// The door swells as the camera closes in, then is gone
 		door.scale.setScalar(1 + open * 1.6)
 		const doorAlpha = 1 - smooth(FLASH_AT - 0.01, FLASH_AT + 0.03, progress)
 		doorMaterials.forEach((m) => (m.opacity = doorAlpha))
@@ -516,7 +527,7 @@ export const createLandingScene = (
 		uniforms.uTime.value = time
 		if (bloom) {
 			const flash = clamp01(1 - Math.abs(progress - FLASH_AT) / FLASH_WIDTH)
-			const settle = smooth(0.9, 0.95, progress)
+			const settle = smooth(0.955, 0.985, progress)
 			const live =
 				0.7 + 0.5 * Math.sin(time * 0.9) * 0.2 + progress * 0.5 + flash * 1.4
 			// Glow off at the end so the coins are crisp, not blown out
@@ -525,7 +536,7 @@ export const createLandingScene = (
 
 		// Once the glow is off, render straight to the screen: the composer's
 		// buffers have no anti-aliasing and the coin edges would be jagged
-		if (composer && progress < 0.95) composer.render()
+		if (composer && progress < 0.985) composer.render()
 		else renderer.render(scene, camera)
 	}
 

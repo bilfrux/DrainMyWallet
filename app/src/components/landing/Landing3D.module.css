@@ -1,7 +1,7 @@
 /* The section is tall; the stage inside it stays pinned while the page scrolls */
 .section {
 	position: relative;
-	height: 800vh;
+	height: 1000vh;
 	/* Full-bleed: break out of the 1100px page column */
 	width: 100vw;
 	margin-left: calc(50% - 50vw);
@@ -419,7 +419,7 @@
 
 @media (max-width: 720px) {
 	.section {
-		height: 660vh;
+		height: 780vh;
 	}
 
 	.chapter {
