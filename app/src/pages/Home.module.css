@@ -227,6 +227,15 @@
 	color: var(--color-text-muted);
 }
 
+/* Not registered in the factory yet: still browsable, visibly dimmed */
+.soon {
+	opacity: 0.45;
+}
+
+.soon .levelStatus {
+	color: var(--color-text-muted);
+}
+
 .in-progress .levelStatus {
 	color: var(--color-warning);
 }
