@@ -646,6 +646,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "40404c3f5f511ec4da6fe866ddf6a717c309fdbb69fbbad7b0f3edab8f2e835f"
 
 [[package]]
+name = "factory"
+version = "0.0.2"
+dependencies = [
+ "soroban-sdk",
+ "xp-token",
+]
+
+[[package]]
 name = "ff"
 version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1613,6 +1621,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "test-level"
+version = "0.0.2"
+dependencies = [
+ "soroban-sdk",
+]
+
+[[package]]
 name = "thiserror"
 version = "1.0.69"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1876,6 +1891,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7a2ba9642430ee452d5a7aa78d72907ebe8cfda358e8cb7918a2050581322f97"
 dependencies = [
  "windows-link",
+]
+
+[[package]]
+name = "xp-token"
+version = "0.0.2"
+dependencies = [
+ "soroban-sdk",
 ]
 
 [[package]]
