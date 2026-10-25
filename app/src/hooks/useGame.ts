@@ -6,6 +6,7 @@ import {
 	fetchLeaderboard,
 	fetchProgress,
 	fetchRegisteredLevels,
+	fetchSolveCounts,
 	fetchVaultBalance,
 	fetchXp,
 	isSafeNetwork,
@@ -142,5 +143,16 @@ export const useBanned = (instanceId: string | undefined) => {
 		queryFn: () => fetchBanned(instanceId!, address!),
 		enabled: ready && !!instanceId && !!address,
 		refetchInterval: (query) => (query.state.data === false ? false : 20_000),
+	})
+}
+
+/** How many players have solved each level, for the level list. */
+export const useSolveCounts = () => {
+	const { ready } = useGameStatus()
+	return useQuery({
+		queryKey: ["solve-counts"],
+		queryFn: fetchSolveCounts,
+		enabled: ready,
+		staleTime: 60_000,
 	})
 }
