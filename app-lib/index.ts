@@ -6,5 +6,6 @@
 export * from "./env" // rpcUrl, networkPassphrase, allowHttp, stellarNetwork, network, labPrefix
 export * from "./format" // shortAddress, formatNetworkName, networkStatus, NetworkState, errorMessage
 export * from "./friendbot" // getFriendbotUrl
+export * from "./game" // DrainMyWallet factory + $DRAIN XP calls, explorer links
 export * from "./subscription" // subscribeToEvents
 export * from "./wallet" // connectWallet, disconnectWallet, profileModal, signTransaction, onWalletChange, fetchBalances, wallet, MappedBalances, WalletState
