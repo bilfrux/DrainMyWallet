@@ -485,11 +485,13 @@
 	padding-top: var(--footer-h, 3.6rem);
 }
 
-/* The hero's terminal prompt: a log line in the top-left corner of the stage,
-   no plate and no frame, fading out as soon as the page scrolls. */
+/* The hero's terminal prompt: a status line in the bottom-left corner of the
+   stage, far from the header's own prompt. No plate, no frame; it fades out as
+   soon as the page scrolls. The extra offset keeps it above the fold on first
+   load, when the banner and header push the stage's foot below the viewport. */
 .corner {
 	position: absolute;
-	top: 1.1rem;
+	bottom: calc(1.3rem + 100px);
 	left: clamp(1rem, 3vw, 2.4rem);
 	z-index: 2;
 	margin: 0;
