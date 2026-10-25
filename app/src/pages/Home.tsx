@@ -1,6 +1,6 @@
 import { connectWallet } from "@stellar-scaffold/app-lib"
-import React from "react"
-import { Link } from "react-router-dom"
+import React, { useEffect } from "react"
+import { Link, useLocation } from "react-router-dom"
 import Landing3D from "../components/landing/Landing3D"
 import Terminal from "../components/Terminal"
 import { type Level, levels, pad } from "../game/levels"
@@ -26,11 +26,21 @@ const STATUS_LABEL: Record<Status, string> = {
 
 const Home: React.FC = () => {
 	const { address } = useWallet()
+	const { hash } = useLocation()
 	const { configured } = useGameStatus()
 	const { data: solved } = useProgress()
 	const { data: instances } = useInstances(levels.map((l) => l.id))
 	const { data: xp } = useXp()
 	const { data: registered } = useRegisteredLevels()
+	// `/#levels` (menu link, back from a level) jumps past the intro
+	useEffect(() => {
+		if (hash !== "#levels") return
+		const id = requestAnimationFrame(() =>
+			document.getElementById("levels")?.scrollIntoView(),
+		)
+		return () => cancelAnimationFrame(id)
+	}, [hash])
+
 	const xpShown = useCountUp(Number(xp ?? 0n))
 
 	const statusOf = (id: number): Status =>

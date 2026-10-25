@@ -81,7 +81,25 @@
 
 .bottom {
 	align-items: flex-end;
-	padding-bottom: 13vh;
+	/* the banner and header sit above the stage on first load: keep clear of the fold */
+	padding-bottom: calc(7vh + 100px);
+}
+
+/* A dark floor under the title so nothing behind it competes with the words */
+.bottom::before {
+	content: "";
+	position: absolute;
+	inset: 38% 0 0 0;
+	background: linear-gradient(
+		to top,
+		rgba(0, 6, 2, 0.94) 25%,
+		rgba(0, 6, 2, 0)
+	);
+	pointer-events: none;
+}
+
+.bottom .panel {
+	position: relative;
 }
 
 .left {
@@ -132,7 +150,7 @@
 	margin: 0;
 	font-family: var(--font-display);
 	font-weight: 400;
-	font-size: clamp(2.8rem, 9vw, 6.6rem);
+	font-size: clamp(2.6rem, 8vw, 6rem);
 	line-height: 0.95;
 	letter-spacing: 0.05em;
 	color: var(--color-accent);
@@ -366,22 +384,17 @@
 	transform: scale(1.35);
 }
 
-.skip {
+/* Floating shortcut to the levels, always within reach during the intro */
+.enter {
 	position: absolute;
-	left: clamp(1rem, 3vw, 2rem);
-	bottom: 1.6rem;
-	background: none;
-	border: none;
-	padding: 0.3rem 0;
-	color: var(--color-text-muted);
-	font-size: 0.78rem;
-	letter-spacing: 0.1em;
-	text-transform: uppercase;
-	z-index: 2;
-}
-
-.skip:hover {
-	color: var(--color-accent);
+	top: 1.2rem;
+	right: clamp(2.6rem, 5vw, 4.2rem);
+	z-index: 3;
+	padding: 0.65rem 1.2rem;
+	background: rgba(0, 12, 4, 0.75);
+	opacity: 0;
+	pointer-events: none;
+	backdrop-filter: blur(6px);
 }
 
 /* ── Fallback: reduced motion or no WebGL ─────────────── */
@@ -424,7 +437,10 @@
 		bottom: 1.4rem;
 	}
 
-	.skip {
-		display: none;
+	.enter {
+		top: 0.8rem;
+		right: 2.4rem;
+		padding: 0.5rem 0.8rem;
+		font-size: 0.7rem;
 	}
 }

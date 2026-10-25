@@ -91,6 +91,7 @@ const Landing3D = () => {
 	const dotRefs = useRef<(HTMLButtonElement | null)[]>([])
 	const hintRef = useRef<HTMLDivElement>(null)
 	const barRef = useRef<HTMLDivElement>(null)
+	const enterRef = useRef<HTMLButtonElement>(null)
 	const [animated] = useState(shouldAnimate)
 	const [loading, setLoading] = useState(animated)
 
@@ -139,6 +140,12 @@ const Landing3D = () => {
 			if (hintRef.current)
 				hintRef.current.style.opacity = String(1 - clamp01(p / 0.04))
 			if (barRef.current) barRef.current.style.transform = `scaleY(${p})`
+			// The floating button takes over once the hero's own button scrolls away
+			if (enterRef.current) {
+				const v = clamp01((p - 0.05) / 0.05) * clamp01((0.78 - p) / 0.04)
+				enterRef.current.style.opacity = String(v)
+				enterRef.current.style.pointerEvents = v > 0.5 ? "auto" : "none"
+			}
 		}
 
 		const tick = () => {
@@ -215,7 +222,7 @@ const Landing3D = () => {
 		})
 	}
 
-	const skip = () =>
+	const enter = () =>
 		document.getElementById("levels")?.scrollIntoView({ behavior: "smooth" })
 
 	const chapterBody = (c: Chapter) => (
@@ -229,6 +236,16 @@ const Landing3D = () => {
 				<h2 className={styles.title}>{c.title}</h2>
 			)}
 			<p className={styles.body}>{c.body}</p>
+			{c.id === "intro" && (
+				<div className={styles.actions}>
+					<button className={styles.cta} onClick={enter}>
+						Enter the game ▸
+					</button>
+					<button className={styles.ghost} onClick={() => jumpTo(1)}>
+						how it works ↓
+					</button>
+				</div>
+			)}
 			{c.id === "break" && (
 				<pre className={styles.snippet}>
 					{`$ stellar contract invoke --id C…YOURS \\
@@ -242,7 +259,7 @@ const Landing3D = () => {
 					<Link to="/level/1" className={styles.cta}>
 						Start level 01 ▸
 					</Link>
-					<button className={styles.ghost} onClick={skip}>
+					<button className={styles.ghost} onClick={enter}>
 						or see all levels ↓
 					</button>
 				</div>
@@ -308,8 +325,8 @@ const Landing3D = () => {
 					))}
 				</nav>
 
-				<button className={styles.skip} onClick={skip}>
-					skip intro ↓
+				<button ref={enterRef} className={styles.enter} onClick={enter}>
+					Enter the game ▸
 				</button>
 			</div>
 		</section>
