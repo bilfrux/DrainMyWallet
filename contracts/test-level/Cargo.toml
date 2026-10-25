@@ -1,0 +1,14 @@
+[package]
+name = "test-level"
+description = "Test fixture: minimal level used by the factory tests. Not part of the game."
+edition.workspace = true
+license.workspace = true
+publish = false
+version.workspace = true
+
+[lib]
+crate-type = ["cdylib"]
+doctest = false
+
+[dependencies]
+soroban-sdk = { workspace = true }
