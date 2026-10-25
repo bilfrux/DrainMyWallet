@@ -51,20 +51,20 @@ impl FatalCast {
         }
 
         let claimed_key = DataKey::Claimed(player.clone());
-        if env.storage().persistent().has(&claimed_key) {
+        if env.storage().instance().has(&claimed_key) {
             panic_with_error!(env, Error::AlreadyClaimed);
         }
-        env.storage().persistent().set(&claimed_key, &true);
+        env.storage().instance().set(&claimed_key, &true);
 
         let balance_key = DataKey::Balance(player);
-        let balance: i128 = env.storage().persistent().get(&balance_key).unwrap_or(0);
-        env.storage().persistent().set(&balance_key, &(balance + amount));
+        let balance: i128 = env.storage().instance().get(&balance_key).unwrap_or(0);
+        env.storage().instance().set(&balance_key, &(balance + amount));
     }
 
     /// Points held by `id` in the internal ledger.
     pub fn balance(env: &Env, id: Address) -> i128 {
         env.storage()
-            .persistent()
+            .instance()
             .get(&DataKey::Balance(id))
             .unwrap_or(0)
     }
