@@ -202,10 +202,9 @@ const LevelPage = () => {
 								</>
 							)}
 							<p className={styles.small}>
-								Deploying costs about 73 testnet XLM of storage rent: use{" "}
-								<em>Fund account</em> (Friendbot) if you run low. The site never
-								signs an exploit for you. It only deploys instances and verifies
-								wins.
+								You need a funded testnet account: use <em>Fund account</em>{" "}
+								(Friendbot) if you don&apos;t have one. The site never signs an
+								exploit for you. It only deploys instances and verifies wins.
 							</p>
 						</>
 					)}
