@@ -285,7 +285,7 @@ const Landing3D = () => {
 			{c.id === "intro" && (
 				<div className={styles.actions}>
 					<button className={styles.cta} onClick={enter}>
-						Enter the game ▸
+						Start to drain ▸
 					</button>
 					<button className={styles.ghost} onClick={() => jumpTo(1)}>
 						how it works ↓
@@ -302,7 +302,7 @@ const Landing3D = () => {
 			)}
 			{c.id === "final" && (
 				<div className={styles.actions}>
-					<Link to="/level/1" className={styles.cta}>
+					<Link to="/play" className={styles.cta}>
 						Start to drain ▸
 					</Link>
 				</div>
@@ -370,7 +370,7 @@ const Landing3D = () => {
 				</nav>
 
 				<button ref={enterRef} className={styles.enter} onClick={enter}>
-					Enter the game ▸
+					Start to drain ▸
 				</button>
 			</div>
 		</section>
