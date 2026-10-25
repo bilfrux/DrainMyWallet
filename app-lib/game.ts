@@ -1,4 +1,4 @@
-import { contract, rpc, scValToNative, type xdr } from "@stellar/stellar-sdk"
+import { contract, rpc, scValToNative, xdr } from "@stellar/stellar-sdk"
 import { allowHttp, networkPassphrase, rpcUrl, stellarNetwork } from "./env"
 import { signTransaction } from "./wallet"
 
@@ -10,7 +10,7 @@ import { signTransaction } from "./wallet"
  *
  * Set them in `app/.env`:
  *   PUBLIC_FACTORY_CONTRACT_ID=C...
- *   PUBLIC_XP_CONTRACT_ID=C...
+ *   PUBLIC_XP_CONTRACT_ID=C...   (optional: asked from the factory otherwise)
  */
 export const factoryContractId = (
 	import.meta.env.PUBLIC_FACTORY_CONTRACT_ID as string | undefined
@@ -32,6 +32,7 @@ interface FactoryClient {
 	instance_of: Call<{ player: string; level_id: number }, string | undefined>
 	submit: Call<{ player: string; level_id: number }, boolean>
 	progress: Call<{ player: string }, number[]>
+	xp_token: Call<Record<string, never>, string>
 }
 
 interface XpClient {
@@ -137,10 +138,21 @@ export const submitLevel = async (
 	return send(tx)
 }
 
-/** $DRAIN balance. Falls back to 0 when the XP token isn't configured. */
+let xpTokenId: Promise<string> | undefined
+
+/** The $DRAIN contract: from the env, else asked from the factory once. */
+const resolveXpToken = () => {
+	if (xpContractId) return Promise.resolve(xpContractId)
+	xpTokenId ??= factory()
+		.then((client) => client.xp_token({}))
+		.then((tx) => unwrap<string>(tx.result))
+	xpTokenId.catch(() => (xpTokenId = undefined))
+	return xpTokenId
+}
+
+/** The player's $DRAIN balance. */
 export const fetchXp = async (player: string): Promise<bigint> => {
-	if (!xpContractId) return 0n
-	const client = await getClient<XpClient>(xpContractId)
+	const client = await getClient<XpClient>(await resolveXpToken())
 	const tx = await client.balance({ id: player })
 	return BigInt(unwrap<bigint>(tx.result))
 }
@@ -148,17 +160,6 @@ export const fetchXp = async (player: string): Promise<bigint> => {
 export interface LeaderboardEntry {
 	address: string
 	xp: bigint
-}
-
-/** Every Stellar account (G...) address found anywhere in a decoded value. */
-const collectAccounts = (value: unknown, into: Set<string>) => {
-	if (typeof value === "string") {
-		if (/^G[A-Z2-7]{55}$/.test(value)) into.add(value)
-	} else if (Array.isArray(value)) {
-		value.forEach((v) => collectAccounts(v, into))
-	} else if (value !== null && typeof value === "object") {
-		Object.values(value).forEach((v) => collectAccounts(v, into))
-	}
 }
 
 const decode = (val: xdr.ScVal): unknown => {
@@ -169,29 +170,41 @@ const decode = (val: xdr.ScVal): unknown => {
 	}
 }
 
+const LEVEL_SOLVED = xdr.ScVal.scvSymbol("level_solved").toXDR("base64")
+
 /**
- * Players come from the factory's events (instances created, levels
- * submitted) within the RPC retention window, then get ranked by $DRAIN. The
- * event layout isn't assumed: any account address in a topic or value counts.
+ * Players come from the factory's `level_solved` events (topics: name,
+ * player, level_id) within the RPC retention window, then get ranked by their
+ * $DRAIN balance. RPC scans a bounded ledger range per request and can return
+ * an empty page with a cursor, so page until the cursor reaches the tip.
  */
 export const fetchLeaderboard = async (): Promise<LeaderboardEntry[]> => {
 	const factoryId = requireFactory()
-	const { oldestLedger } = await server.getHealth()
+	const { oldestLedger, latestLedger } = await server.getHealth()
 	const players = new Set<string>()
+	const filters: rpc.Api.EventFilter[] = [
+		{
+			type: "contract",
+			contractIds: [factoryId],
+			topics: [[LEVEL_SOLVED, "*", "*"]],
+		},
+	]
 
 	let request: rpc.Api.GetEventsRequest = {
-		filters: [{ type: "contract", contractIds: [factoryId] }],
+		filters,
 		startLedger: oldestLedger,
 		limit: 1000,
 	}
-	for (let page = 0; page < 20; page++) {
+	for (let page = 0; page < 50; page++) {
 		const { events, cursor } = await server.getEvents(request)
 		for (const event of events) {
-			event.topic.forEach((t) => collectAccounts(decode(t), players))
-			collectAccounts(decode(event.value), players)
+			const player = event.topic[1] && decode(event.topic[1])
+			if (typeof player === "string") players.add(player)
 		}
-		if (events.length < 1000) break
-		request = { filters: request.filters, cursor, limit: 1000 }
+		// Cursors are "<toid>-<index>"; the ledger is the toid's high 32 bits
+		const scanned = Number(BigInt(cursor.split("-")[0] ?? "0") >> 32n)
+		if (scanned >= latestLedger) break
+		request = { filters, cursor, limit: 1000 }
 	}
 
 	const entries = await Promise.all(
