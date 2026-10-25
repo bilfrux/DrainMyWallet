@@ -84,6 +84,17 @@ const LEVELS: Omit<Level, "source">[] = [
 		xp: 500,
 		bonus: true,
 	},
+	{
+		id: 6,
+		slug: "06-counterfeit",
+		name: "Counterfeit",
+		story:
+			"The vault gives you credit for whatever token you hand over. It never asked where the token came from, only whether the transfer went through.",
+		goal: "Empty the vault.",
+		hint: "In Soroban, every address can be a contract, and you can write one. What does the vault do with the token address you give it? Who decides what its transfer does?",
+		xp: 600,
+		needsTrustline: true,
+	},
 ]
 
 export const levels: Level[] = LEVELS.map((level) => ({
