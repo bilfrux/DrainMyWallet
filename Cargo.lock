@@ -888,6 +888,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "level-01-open-door"
+version = "0.0.2"
+dependencies = [
+ "soroban-sdk",
+]
+
+[[package]]
+name = "level-02-crown"
+version = "0.0.2"
+dependencies = [
+ "soroban-sdk",
+]
+
+[[package]]
+name = "level-03-wrong-signer"
+version = "0.0.2"
+dependencies = [
+ "soroban-sdk",
+]
+
+[[package]]
 name = "level-04-fatal-cast"
 version = "0.0.2"
 dependencies = [

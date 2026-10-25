@@ -1,0 +1,23 @@
+[package]
+name = "level-02-crown"
+description = "DrainMyWallet level 2: an initialize function that can be called again"
+edition.workspace = true
+license.workspace = true
+publish = false
+version.workspace = true
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+[package.metadata.stellar]
+cargo_inherit = true
+
+[lib]
+crate-type = ["cdylib"]
+doctest = false
+
+[dependencies]
+soroban-sdk = { workspace = true }
+
+[dev-dependencies]
+soroban-sdk = { workspace = true, features = ["testutils"] }

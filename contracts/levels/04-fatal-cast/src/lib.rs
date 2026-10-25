@@ -58,7 +58,9 @@ impl FatalCast {
 
         let balance_key = DataKey::Balance(player);
         let balance: i128 = env.storage().instance().get(&balance_key).unwrap_or(0);
-        env.storage().instance().set(&balance_key, &(balance + amount));
+        env.storage()
+            .instance()
+            .set(&balance_key, &(balance + amount));
     }
 
     /// Points held by `id` in the internal ledger.
