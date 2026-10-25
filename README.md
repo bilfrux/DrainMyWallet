@@ -25,9 +25,9 @@ Every level has exactly one intended vulnerability. Finding it is the game, so i
 | 5 | Forgetful List | Claim a perk you are banned from | 500 |
 | 6 | Counterfeit | Empty the vault (you will need to write a contract) | 600 |
 
-Each level ships with an exploit as a `cargo test` in its own `test` module, so no level can turn out impossible.
+Each level ships with an exploit as a `cargo test` in its own `test` module, so no level can turn out impossible. Write-ups of every exploit (spoilers) live on the [`solutions`](../../tree/solutions) branch, away from `main`.
 
-Level 6 is the hardest: the exploit is a small contract you write and deploy yourself.
+Level 1 is guided: the page walks you through it in eight steps and notices on its own what you have already done. Level 6 is the hardest: the exploit is a small contract you write and deploy yourself.
 
 Level 5 depends on time: a temporary storage entry lasts at least 720 ledgers on testnet, about an hour. Create your instance first and come back to it.
 
@@ -39,7 +39,7 @@ You need the [Stellar CLI](https://developers.stellar.org/docs/build/smart-contr
 stellar keys generate me --network testnet --fund
 ```
 
-1. **Open the site**, connect a wallet (Freighter or any wallet supported by Stellar Wallets Kit) set to **testnet**, pick a level and click **Create my instance**. The site refuses to run on any other network.
+1. **Open the site** and press **Start to drain** (or scroll through the intro first). On the level list, connect a wallet (Freighter or any wallet supported by Stellar Wallets Kit) set to **testnet**, pick a level and click **Create my instance**. The site refuses to run on any other network.
 2. **Read the contract** shown on the level page and find the bug.
 3. **Exploit it yourself** with the Stellar CLI or a script, signing as your own account:
    ```bash
@@ -53,7 +53,7 @@ Levels 1, 2 and 6 pay out in `LOOT`, a classic Stellar asset, so your account ne
 stellar tx new change-trust --line LOOT:<issuer> --source-account me --network testnet
 ```
 
-The issuer is in [Deployed contracts](#deployed-contracts). The level page shows this step and detects when the trustline is open.
+The issuer is in [Deployed contracts](#deployed-contracts). The level page shows this step and detects when the trustline is open. The guided level 1 uses a throwaway `attacker` key for the attack, so your wallet's own key never has to leave the wallet.
 
 You can create a fresh instance of a level at any time. Solving a level twice mints nothing the second time.
 
@@ -75,7 +75,11 @@ You can create a fresh instance of a level at any time. Solving a level twice mi
 - **XP token** (`contracts/xp-token`): minimal `$DRAIN` token with `mint`, `balance`, `decimals`, `name` and `symbol`, and deliberately no `transfer`, `transfer_from` or `approve`. Only the factory, fixed at deploy time, can mint.
 - **Levels** (`contracts/levels/*`): each implements `__constructor(player, token)` and `is_solved(player) -> bool`, and keeps its state in instance storage. Initialization uses constructors, so no level needs a fragile `setup` guard.
 - **Game asset**: `LOOT`, a classic Stellar asset issued by the game admin and used through its Stellar Asset Contract.
-- **Frontend** (`app/`, `app-lib/`): React + Vite from [Scaffold Stellar](https://github.com/stellar-scaffold/cli), using Stellar Wallets Kit. Three pages: home, level, leaderboard. The leaderboard rebuilds the player list from the factory's `level_solved` events and reads each `$DRAIN` balance.
+- **Frontend** (`app/`, `app-lib/`): React + Vite from [Scaffold Stellar](https://github.com/stellar-scaffold/cli), using Stellar Wallets Kit. Four pages:
+  - `/` is a scroll-driven 3D intro built with [three.js](https://threejs.org): a neon wallet pours XLM coins, the camera dives through it and down a tunnel to a vault door that opens onto a room of coins. It is lazy-loaded, pauses off screen, and falls back to plain cards with reduced motion or without WebGL.
+  - `/play` lists the levels with the player's progress and XP.
+  - `/level/:id` shows the story, the contract source, a hint, and the instance controls. Level 1 opens with a step-by-step walkthrough that follows the player's progress on-chain (wallet, funded account, instance, and the vault balance polled until it is empty).
+  - `/leaderboard` rebuilds the player list from the factory's `level_solved` events and reads each `$DRAIN` balance.
 
 ### Deployed contracts
 
@@ -94,7 +98,7 @@ Stellar **testnet**. Also in [`deployments/testnet.env`](deployments/testnet.env
 | Level 5 Wasm hash | `19174be6938611f0a95a98105c0ad7553122b9dcf7105221323420318b8bb3a9` |
 | Level 6 Wasm hash | `39c531cdca932acb2f550100555ce274e105f3b20edd0b46da136037dd26c78e` |
 
-All four levels were played end to end on these contracts with a fresh account (create instance, exploit, submit, XP minted once, a second submit mints nothing). The player `GAIX3VXN2IY354E7QCKIWP2IQUCB2QOD6AW6HILXG5SN2EYICNTTSAPM` holds the resulting 1000 `$DRAIN` and can be looked up on [Stellar Expert](https://stellar.expert/explorer/testnet/account/GAIX3VXN2IY354E7QCKIWP2IQUCB2QOD6AW6HILXG5SN2EYICNTTSAPM).
+All six levels were played end to end on these contracts with a fresh account (create instance, exploit, submit, XP minted once, a second submit mints nothing). The player `GAIX3VXN2IY354E7QCKIWP2IQUCB2QOD6AW6HILXG5SN2EYICNTTSAPM` holds the resulting 2,100 `$DRAIN` and can be looked up on [Stellar Expert](https://stellar.expert/explorer/testnet/account/GAIX3VXN2IY354E7QCKIWP2IQUCB2QOD6AW6HILXG5SN2EYICNTTSAPM).
 
 ### Trust and safety
 
@@ -162,11 +166,11 @@ Set in `app/.env` (see `app/.env.example`). Variables prefixed `PUBLIC_` reach t
 contracts/
 ├── factory/        deploys instances, verifies wins, mints XP
 ├── xp-token/       $DRAIN, non-transferable
-├── levels/         01-open-door, 02-crown, 03-wrong-signer, 04-fatal-cast, 05-forgetful-list, 06-counterfeit
+├── levels/         01-open-door … 06-counterfeit
 ├── test-level/     fixture used only by the factory tests
 └── guess-the-number/   Scaffold example, kept as a reference
 app/, app-lib/      frontend and wallet helpers (Scaffold Stellar)
-scripts/            deploy.sh
+scripts/            deploy.sh (game contracts), build-vercel.sh (site), deploy-testnet.sh (alternative all-in-one testnet deploy)
 deployments/        contract ids per network
 ```
 
