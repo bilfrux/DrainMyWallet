@@ -23,7 +23,7 @@ export interface LandingScene {
 }
 
 const GREEN = 0x00ff41
-const CAMERA_START = 21
+const CAMERA_START = 17
 const CAMERA_END = -72
 const DOOR_Z = -90
 
@@ -62,6 +62,42 @@ const segmentsOf = (points: number[]) => {
 	const geometry = new LineSegmentsGeometry()
 	geometry.setPositions(points)
 	return geometry
+}
+
+/**
+ * A Stellar-lumens style coin: ring, slanted trail and two sparks. Drawn once
+ * on a canvas and used as the sprite of every glyph pouring out of the wallet.
+ */
+const coinTexture = () => {
+	const size = 128
+	const canvas = document.createElement("canvas")
+	canvas.width = canvas.height = size
+	const ctx = canvas.getContext("2d")!
+	ctx.strokeStyle = "#fff"
+	ctx.fillStyle = "#fff"
+	ctx.lineCap = "round"
+	ctx.lineWidth = 9
+	ctx.beginPath()
+	ctx.arc(64, 64, 52, 0, Math.PI * 2)
+	ctx.stroke()
+	// The slanted trail through the ring
+	ctx.lineWidth = 8
+	ctx.beginPath()
+	ctx.moveTo(30, 82)
+	ctx.quadraticCurveTo(62, 70, 98, 44)
+	ctx.stroke()
+	// Two sparks
+	for (const [x, y, r] of [
+		[46, 44, 7],
+		[84, 86, 6],
+	] as const) {
+		ctx.beginPath()
+		ctx.arc(x, y, r, 0, Math.PI * 2)
+		ctx.fill()
+	}
+	const texture = new THREE.CanvasTexture(canvas)
+	texture.colorSpace = THREE.SRGBColorSpace
+	return texture
 }
 
 export const createLandingScene = (
@@ -150,8 +186,8 @@ export const createLandingScene = (
 	)
 	scene.add(wallet)
 
-	// ── Drain: glyphs pouring out of the wallet ───────────────────────────
-	const count = opts.lowPower ? 1400 : 4200
+	// ── Drain: coins tumbling out of the wallet ───────────────────────────
+	const count = opts.lowPower ? 55 : 130
 	const seeds = new Float32Array(count * 4)
 	for (let i = 0; i < seeds.length; i++) seeds[i] = Math.random()
 	const drainGeometry = new THREE.BufferGeometry()
@@ -160,7 +196,12 @@ export const createLandingScene = (
 		new THREE.BufferAttribute(new Float32Array(count * 3), 3),
 	)
 	drainGeometry.setAttribute("seed", new THREE.BufferAttribute(seeds, 4))
-	const uniforms = { uTime: { value: 0 }, uScale: { value: 300 } }
+	const coin = coinTexture()
+	const uniforms = {
+		uTime: { value: 0 },
+		uScale: { value: 300 },
+		uMap: { value: coin },
+	}
 	const drainMaterial = new THREE.ShaderMaterial({
 		transparent: true,
 		depthWrite: false,
@@ -171,30 +212,48 @@ export const createLandingScene = (
 			uniform float uTime;
 			uniform float uScale;
 			varying float vAlpha;
+			varying float vSpin;
+			varying float vTilt;
 			void main() {
-				float t = fract(seed.x + uTime * (0.07 + 0.12 * seed.y));
+				float t = fract(seed.x + uTime * (0.1 + 0.06 * seed.y));
 				vec3 p;
-				p.x = (seed.z - 0.5) * 5.4 * (1.0 - 0.55 * t) + sin(uTime * 0.7 + seed.w * 20.0) * 0.18 * t;
-				p.y = -1.9 - t * 13.0;
-				p.z = (seed.w - 0.5) * 1.0 * (1.0 + t * 2.0);
+				// Spills out of the wallet's lower edge in a fan, then falls
+				float side = seed.z - 0.5;
+				p.x = side * 3.0 + side * 48.0 * t * (0.5 + 0.5 * seed.y);
+				p.y = -1.9 - 3.0 * t - 12.0 * t * t;
+				p.z = (seed.w - 0.5) * 1.6;
 				vec4 mv = modelViewMatrix * vec4(p, 1.0);
 				gl_Position = projectionMatrix * mv;
-				gl_PointSize = (0.05 + 0.1 * seed.y) * uScale / -mv.z * (1.0 - 0.5 * t);
-				vAlpha = smoothstep(0.0, 0.04, t) * (1.0 - t);
+				gl_PointSize = (0.55 + 0.5 * seed.y) * uScale / -mv.z;
+				// Coins in the title's column vanish; the ones spilling to the sides keep falling
+				float below = smoothstep(-2.1, -3.2, p.y);
+				float centre = 1.0 - smoothstep(5.5, 10.0, abs(p.x));
+				vAlpha = smoothstep(0.0, 0.05, t) * (1.0 - smoothstep(0.6, 0.95, t)) * (1.0 - below * centre);
+				vSpin = uTime * (1.2 + 1.8 * seed.y) + seed.w * 6.2831;
+				vTilt = seed.z * 6.2831;
 			}
 		`,
 		fragmentShader: /* glsl */ `
+			uniform sampler2D uMap;
 			varying float vAlpha;
+			varying float vSpin;
+			varying float vTilt;
 			void main() {
-				vec2 c = abs(gl_PointCoord - 0.5);
-				if (max(c.x, c.y) > 0.5) discard;
-				// A glyph-ish square with a hollow centre
-				float edge = step(0.18, max(c.x, c.y));
-				gl_FragColor = vec4(0.05, 1.0, 0.05, vAlpha * 0.5 * (0.45 + 0.55 * edge));
+				vec2 uv = gl_PointCoord - 0.5;
+				// In-plane tilt, then a flip around the vertical axis
+				float c = cos(vTilt), s = sin(vTilt);
+				uv = vec2(c * uv.x - s * uv.y, s * uv.x + c * uv.y);
+				float flip = max(0.12, abs(cos(vSpin)));
+				uv.x /= flip;
+				if (abs(uv.x) > 0.5 || abs(uv.y) > 0.5) discard;
+				float a = texture2D(uMap, uv + 0.5).a;
+				gl_FragColor = vec4(0.35, 1.0, 0.5, a * vAlpha * (0.8 + 0.2 * flip));
 			}
 		`,
 	})
-	scene.add(new THREE.Points(drainGeometry, drainMaterial))
+	const drain = new THREE.Points(drainGeometry, drainMaterial)
+	drain.frustumCulled = false
+	scene.add(drain)
 
 	// ── Tunnel ───────────────────────────────────────────────────────────
 	const rings = new THREE.Group()
@@ -330,7 +389,10 @@ export const createLandingScene = (
 		wallet.rotation.y = Math.sin(time * 0.35) * 0.35 + progress * 2.4
 		wallet.rotation.x = Math.sin(time * 0.27) * 0.08 - 0.12
 		wallet.position.y =
-			lerp(1.7, 0, clamp01(progress / 0.17)) + Math.sin(time * 0.8) * 0.12
+			lerp(4.6, 0, clamp01(progress / 0.19)) + Math.sin(time * 0.8) * 0.12
+		// The coins pour out of wherever the wallet currently is
+		drain.position.y = wallet.position.y
+		drain.visible = progress < 0.22
 		// The wallet fades once we are inside it
 		const gone = clamp01((z - -2) / 10)
 		wallet.visible = gone > 0.01 || z > -4
@@ -391,6 +453,7 @@ export const createLandingScene = (
 				mesh.geometry?.dispose?.()
 			})
 			lineMaterials.forEach((m) => m.dispose())
+			coin.dispose()
 			drainMaterial.dispose()
 			ringMaterial.dispose()
 			composer?.dispose()

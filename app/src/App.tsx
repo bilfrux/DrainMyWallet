@@ -38,7 +38,7 @@ const AppLayout = () => (
 				<span className="cursor" />
 			</Link>
 			<nav className={styles.headerNav}>
-				<NavLink to="/" end className={navClass}>
+				<NavLink to="/#levels" className={navClass}>
 					./levels
 				</NavLink>
 				<NavLink to="/leaderboard" className={navClass}>
