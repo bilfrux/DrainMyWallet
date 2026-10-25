@@ -30,6 +30,7 @@ LEVELS=(
   "3 level-03-wrong-signer    0           300"
   "4 level-04-fatal-cast      0           400"
   "5 level-05-forgetful-list  0           500"
+  "6 level-06-counterfeit     10000000000 600"
 )
 if [[ "${WITH_TEST_LEVEL:-0}" == "1" ]]; then
   LEVELS+=("99 test-level 10000000000 1")
