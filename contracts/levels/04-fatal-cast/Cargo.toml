@@ -1,0 +1,23 @@
+[package]
+name = "level-04-fatal-cast"
+description = "DrainMyWallet level 4: a reward cap checked through a truncating cast"
+edition.workspace = true
+license.workspace = true
+publish = false
+version.workspace = true
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+[package.metadata.stellar]
+cargo_inherit = true
+
+[lib]
+crate-type = ["cdylib"]
+doctest = false
+
+[dependencies]
+soroban-sdk = { workspace = true }
+
+[dev-dependencies]
+soroban-sdk = { workspace = true, features = ["testutils"] }
