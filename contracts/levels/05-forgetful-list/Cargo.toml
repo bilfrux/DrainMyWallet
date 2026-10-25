@@ -1,0 +1,23 @@
+[package]
+name = "level-05-forgetful-list"
+description = "DrainMyWallet level 5: a ban list kept in temporary storage"
+edition.workspace = true
+license.workspace = true
+publish = false
+version.workspace = true
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+[package.metadata.stellar]
+cargo_inherit = true
+
+[lib]
+crate-type = ["cdylib"]
+doctest = false
+
+[dependencies]
+soroban-sdk = { workspace = true }
+
+[dev-dependencies]
+soroban-sdk = { workspace = true, features = ["testutils"] }
