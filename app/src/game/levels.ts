@@ -8,6 +8,8 @@ export interface Level {
 	hint: string
 	xp: number
 	bonus?: boolean
+	/** Shows the step-by-step walkthrough instead of the bare instance panel */
+	guided?: boolean
 	/**
 	 * The exploit pays out LOOT, a classic asset: the player's account needs a
 	 * trustline first or the transfer fails with `Error(Contract, #13)`.
@@ -41,6 +43,7 @@ const LEVELS: Omit<Level, "source">[] = [
 		hint: "Look at who is allowed to call withdraw. Then look again. In Soroban, nothing is protected unless someone calls require_auth().",
 		xp: 100,
 		needsTrustline: true,
+		guided: true,
 	},
 	{
 		id: 2,

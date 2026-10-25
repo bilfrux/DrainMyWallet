@@ -1,0 +1,374 @@
+.tour {
+	margin-bottom: 2rem;
+	padding: 1.6rem 1.8rem 1.8rem;
+	background: rgba(0, 14, 5, 0.72);
+	border: 1px solid var(--color-border);
+	border-top: 3px solid var(--color-accent);
+	backdrop-filter: blur(6px);
+	box-shadow: var(--shadow);
+}
+
+.head {
+	display: flex;
+	align-items: flex-end;
+	justify-content: space-between;
+	gap: 1rem;
+}
+
+.kicker {
+	margin: 0 0 0.3rem;
+	color: var(--color-text-muted);
+	font-size: 0.75rem;
+	letter-spacing: 0.18em;
+	text-transform: uppercase;
+}
+
+.mission {
+	margin: 0;
+	font-family: var(--font-display);
+	font-weight: 400;
+	font-size: clamp(1.8rem, 4vw, 2.6rem);
+	color: var(--color-accent);
+	text-shadow: var(--glow);
+}
+
+.count {
+	margin: 0;
+	font-family: var(--font-display);
+	font-size: 2rem;
+	color: var(--color-text-muted);
+}
+
+.progress {
+	height: 4px;
+	margin: 1rem 0 1.2rem;
+	background: var(--color-border);
+}
+
+.progressFill {
+	height: 100%;
+	background: var(--color-accent);
+	box-shadow: var(--glow);
+	transition: width 0.6s ease;
+}
+
+/* ── Glossary ─────────────────────────────────────────── */
+
+.glossary {
+	margin-bottom: 1.4rem;
+	border: 1px dashed var(--color-border);
+	padding: 0.7rem 1rem;
+}
+
+.glossary summary {
+	cursor: pointer;
+	color: var(--color-text-muted);
+	font-size: 0.85rem;
+	letter-spacing: 0.04em;
+}
+
+.glossary dl {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+	gap: 0.9rem 1.4rem;
+	margin: 0.9rem 0 0.2rem;
+}
+
+.glossary dt {
+	color: var(--color-accent);
+	font-weight: 700;
+	margin-bottom: 0.15rem;
+}
+
+.glossary dd {
+	margin: 0;
+	font-size: 0.85rem;
+	line-height: 1.5;
+	color: var(--color-text);
+}
+
+/* ── Steps ────────────────────────────────────────────── */
+
+.steps {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: grid;
+	gap: 0.55rem;
+}
+
+.step {
+	position: relative;
+	border: 1px solid var(--color-border);
+	background: rgba(0, 0, 0, 0.3);
+	transition:
+		border-color 0.3s,
+		box-shadow 0.3s,
+		opacity 0.3s;
+}
+
+.step[data-state="todo"] {
+	opacity: 0.55;
+}
+
+.step[data-state="done"] {
+	border-color: rgba(0, 255, 65, 0.25);
+}
+
+.step[data-state="active"] {
+	border-color: var(--color-accent);
+	box-shadow:
+		0 0 0 1px rgba(0, 255, 65, 0.25),
+		var(--shadow);
+	animation: arrive 0.5s ease;
+}
+
+@keyframes arrive {
+	from {
+		transform: translateX(-10px);
+		opacity: 0.4;
+	}
+}
+
+.stepHead {
+	display: grid;
+	grid-template-columns: 2.2rem 1fr;
+	grid-template-areas:
+		"badge title"
+		"badge summary";
+	column-gap: 0.9rem;
+	row-gap: 0.1rem;
+	width: 100%;
+	padding: 0.85rem 1rem;
+	text-align: left;
+	text-transform: none;
+	letter-spacing: normal;
+	border: none;
+	background: none;
+	color: var(--color-text);
+	font-size: 1rem;
+}
+
+.stepHead:hover:not(:disabled) {
+	background: rgba(0, 255, 65, 0.06);
+	color: var(--color-text);
+	box-shadow: none;
+}
+
+.badge {
+	grid-area: badge;
+	align-self: center;
+	display: grid;
+	place-items: center;
+	width: 2rem;
+	height: 2rem;
+	border: 1px solid var(--color-accent);
+	border-radius: 50%;
+	font-family: var(--font-display);
+	font-size: 1.15rem;
+	color: var(--color-accent);
+}
+
+.step[data-state="done"] .badge {
+	background: var(--color-accent);
+	color: #00140a;
+	box-shadow: var(--glow);
+}
+
+.stepTitle {
+	grid-area: title;
+	font-weight: 700;
+	color: var(--color-accent);
+}
+
+.here {
+	margin-left: 0.7rem;
+	padding: 0.1rem 0.5rem;
+	font-size: 0.7rem;
+	font-style: normal;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: #00140a;
+	background: var(--color-accent);
+}
+
+.stepSummary {
+	grid-area: summary;
+	font-size: 0.85rem;
+	color: var(--color-text-muted);
+}
+
+.stepBody {
+	padding: 0.2rem 1rem 1.2rem 4.1rem;
+	font-size: 0.95rem;
+	line-height: 1.6;
+}
+
+.stepBody p {
+	margin: 0 0 0.8rem;
+}
+
+.tip {
+	color: var(--color-text-muted);
+	font-style: italic;
+}
+
+.small {
+	font-size: 0.8rem;
+	color: var(--color-text-muted);
+	word-break: break-all;
+}
+
+.answer {
+	padding: 0.8rem 1rem;
+	background: rgba(0, 255, 65, 0.07);
+	border-left: 3px solid var(--color-accent);
+}
+
+.compare {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+	gap: 0.8rem;
+	margin: 0.6rem 0 1rem;
+}
+
+.compare > div {
+	padding: 0.7rem 0.9rem;
+	border: 1px solid var(--color-border);
+	background: rgba(0, 0, 0, 0.35);
+}
+
+.compare p {
+	margin: 0;
+	font-size: 0.85rem;
+	color: var(--color-text-muted);
+}
+
+.fn {
+	font-family: var(--font-mono);
+	color: var(--color-accent) !important;
+	font-size: 0.95rem !important;
+	margin-bottom: 0.2rem !important;
+}
+
+.link {
+	border: none;
+	padding: 0;
+	text-transform: none;
+	letter-spacing: normal;
+	text-decoration: underline;
+	color: var(--color-text-muted);
+}
+
+.link:hover:not(:disabled) {
+	background: none;
+	color: var(--color-accent);
+	box-shadow: none;
+}
+
+.check {
+	padding: 0.8rem 2rem;
+	font-weight: 700;
+}
+
+/* ── Copyable commands ────────────────────────────────── */
+
+.copyBlock {
+	position: relative;
+	margin: 0.2rem 0 1rem;
+}
+
+.copyBlock pre {
+	margin: 0;
+	padding: 0.9rem 5.5rem 0.9rem 1rem;
+	background: rgba(0, 0, 0, 0.6);
+	border: 1px solid var(--color-border);
+	font-size: 0.82rem;
+	line-height: 1.55;
+	color: var(--color-text);
+	overflow-x: auto;
+}
+
+.copyBlock button {
+	position: absolute;
+	top: 0.5rem;
+	right: 0.5rem;
+	padding: 0.3rem 0.7rem;
+	font-size: 0.7rem;
+}
+
+/* ── Vault gauge ──────────────────────────────────────── */
+
+.gauge {
+	padding: 0.9rem 1rem;
+	border: 1px solid var(--color-border);
+	background: rgba(0, 0, 0, 0.35);
+}
+
+.gaugeLabel {
+	display: flex;
+	justify-content: space-between;
+	margin-bottom: 0.5rem;
+	font-size: 0.8rem;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--color-text-muted);
+}
+
+.gaugeTrack {
+	height: 14px;
+	border: 1px solid var(--color-accent);
+	background: rgba(0, 0, 0, 0.5);
+}
+
+.gaugeFill {
+	height: 100%;
+	background: repeating-linear-gradient(
+		135deg,
+		var(--color-accent) 0 8px,
+		rgba(0, 255, 65, 0.55) 8px 16px
+	);
+	box-shadow: var(--glow);
+	transition: width 1.2s ease;
+}
+
+.gauge .small {
+	margin: 0.6rem 0 0;
+}
+
+.lesson {
+	margin-top: 1.2rem;
+	padding: 1.1rem 1.3rem;
+	border: 1px solid var(--color-accent);
+	background: rgba(0, 255, 65, 0.08);
+	box-shadow: var(--glow);
+}
+
+.lesson p {
+	margin: 0 0 0.6rem;
+	line-height: 1.6;
+}
+
+@media (max-width: 720px) {
+	.tour {
+		padding: 1.1rem 0.9rem 1.3rem;
+	}
+
+	.stepBody {
+		padding-left: 1rem;
+	}
+
+	.stepHead {
+		grid-template-columns: 2rem 1fr;
+		padding: 0.75rem 0.7rem;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.step[data-state="active"],
+	.progressFill,
+	.gaugeFill {
+		animation: none;
+		transition: none;
+	}
+}
