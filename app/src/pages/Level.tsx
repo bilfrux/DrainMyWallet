@@ -14,7 +14,12 @@ import SourceView from "../components/SourceView"
 import Terminal from "../components/Terminal"
 import Typewriter from "../components/Typewriter"
 import { getLevel, pad } from "../game/levels"
-import { useGameStatus, useInstance, useProgress } from "../hooks/useGame"
+import {
+	useGameStatus,
+	useInstance,
+	useProgress,
+	useRegisteredLevels,
+} from "../hooks/useGame"
 import { useNotification } from "../hooks/useNotification"
 import { useWallet } from "../hooks/useWallet"
 import styles from "./Level.module.css"
@@ -29,6 +34,7 @@ const LevelPage = () => {
 	const queryClient = useQueryClient()
 	const instance = useInstance(level?.id ?? 0)
 	const { data: solved } = useProgress()
+	const { data: registered } = useRegisteredLevels()
 	const [showHint, setShowHint] = useState(false)
 	const [outcome, setOutcome] = useState<CheckOutcome>()
 	const [deployTx, setDeployTx] = useState<string>()
@@ -40,6 +46,9 @@ const LevelPage = () => {
 	const instanceId = instance.data
 	const isSolved = solved?.includes(level.id) ?? false
 	const busy = isCreating || isChecking
+	// Unknown (loading, or factory unreachable) counts as deployed
+	const isDeployed = !registered || registered.has(level.id)
+	const xp = Number(registered?.get(level.id) ?? BigInt(level.xp))
 
 	const refresh = () =>
 		Promise.all(
@@ -70,7 +79,7 @@ const LevelPage = () => {
 				// A second submit on a solved level mints nothing (SPEC §4)
 				setOutcome(
 					result
-						? { solved: true, xp: isSolved ? 0 : level.xp, txHash }
+						? { solved: true, xp: isSolved ? 0 : xp, txHash }
 						: { solved: false },
 				)
 				if (result) await refresh()
@@ -92,7 +101,8 @@ const LevelPage = () => {
 					<span className={styles.num}>{pad(level.id)}</span> {level.name}
 				</h1>
 				<div className={styles.meta}>
-					<span className={styles.reward}>+{level.xp} $DRAIN</span>
+					<span className={styles.reward}>+{xp} $DRAIN</span>
+					{!isDeployed && <span className={styles.tag}>not deployed yet</span>}
 					{level.bonus && <span className={styles.tag}>bonus</span>}
 					{isSolved && <span className={styles.pwned}>PWNED</span>}
 				</div>
@@ -153,7 +163,15 @@ const LevelPage = () => {
 							)}
 
 							<div className={styles.actions}>
-								<button onClick={create} disabled={!ready || busy}>
+								<button
+									onClick={create}
+									disabled={!ready || busy || !isDeployed}
+									title={
+										isDeployed
+											? undefined
+											: "This level isn't registered in the factory yet"
+									}
+								>
 									{isCreating
 										? "Deploying…"
 										: instanceId

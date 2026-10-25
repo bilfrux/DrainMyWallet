@@ -33,6 +33,14 @@ interface FactoryClient {
 	submit: Call<{ player: string; level_id: number }, boolean>
 	progress: Call<{ player: string }, number[]>
 	xp_token: Call<Record<string, never>, string>
+	level: Call<{ level_id: number }, LevelConfig | undefined>
+}
+
+/** A level as registered in the factory (None until registered). */
+export interface LevelConfig {
+	wasm_hash: Uint8Array
+	funding: bigint
+	xp_reward: bigint
 }
 
 interface XpClient {
@@ -100,6 +108,21 @@ const send = async <T>(
 export const fetchProgress = async (player: string): Promise<number[]> => {
 	const tx = await (await factory()).progress({ player })
 	return unwrap<number[]>(tx.result).map(Number)
+}
+
+/** XP reward of each registered level; unregistered levels are left out. */
+export const fetchRegisteredLevels = async (
+	levelIds: number[],
+): Promise<Map<number, bigint>> => {
+	const client = await factory()
+	const entries = await Promise.all(
+		levelIds.map(async (id) => {
+			const tx = await client.level({ level_id: id })
+			const config = unwrap<LevelConfig | undefined>(tx.result)
+			return config ? ([id, BigInt(config.xp_reward)] as const) : undefined
+		}),
+	)
+	return new Map(entries.filter((e) => e !== undefined))
 }
 
 /** The player's instance of a level, if they deployed one. */
