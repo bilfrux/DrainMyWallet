@@ -1,7 +1,7 @@
 /* The section is tall; the stage inside it stays pinned while the page scrolls */
 .section {
 	position: relative;
-	height: 640vh;
+	height: 800vh;
 	/* Full-bleed: break out of the 1100px page column */
 	width: 100vw;
 	margin-left: calc(50% - 50vw);
@@ -419,7 +419,7 @@
 
 @media (max-width: 720px) {
 	.section {
-		height: 560vh;
+		height: 660vh;
 	}
 
 	.chapter {
@@ -448,4 +448,20 @@
 		padding: 0.5rem 0.8rem;
 		font-size: 0.7rem;
 	}
+}
+
+/* The white-green burst as the camera crosses the opening vault door */
+.flash {
+	position: absolute;
+	inset: 0;
+	opacity: 0;
+	pointer-events: none;
+	z-index: 1;
+	background: radial-gradient(
+		circle at 50% 50%,
+		#f2fff5 0%,
+		#7dffa0 30%,
+		rgba(0, 255, 65, 0.55) 55%,
+		rgba(0, 255, 65, 0) 80%
+	);
 }
