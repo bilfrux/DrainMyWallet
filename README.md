@@ -125,6 +125,19 @@ scripts/deploy.sh testnet my-admin     # asset + SAC, factory, XP token, every l
 
 It writes the resulting ids to `deployments/<network>.env`. Put the factory id in `app/.env` and in `scaffold.yml`.
 
+### Deploying the site (Vercel)
+
+The site is a static single-page app. Vercel cannot build it, because the generated contract clients need Rust and the Stellar CLI, so it is built locally and uploaded as a prebuilt deployment:
+
+```bash
+scripts/build-vercel.sh                  # clients + site for testnet, laid out in .vercel/output
+npx vercel login                         # once
+npx vercel link                          # once, creates or picks the Vercel project
+npx vercel deploy --prebuilt --prod
+```
+
+The script reads the factory id from `deployments/testnet.env` and bakes it into the build, so there is nothing to set in the Vercel dashboard. Routes such as `/level/5` are rewritten to `index.html`. Rebuild and redeploy after any contract redeployment.
+
 ### Environment variables
 
 Set in `app/.env` (see `app/.env.example`). Variables prefixed `PUBLIC_` reach the frontend.
