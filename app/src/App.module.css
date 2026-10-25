@@ -26,13 +26,6 @@
 	white-space: nowrap;
 }
 
-.logoMark {
-	height: 1.7rem;
-	width: 1.7rem;
-	margin-right: 0.6rem;
-	vertical-align: -0.2rem;
-}
-
 .prompt {
 	color: var(--color-text-muted);
 }
