@@ -4,6 +4,7 @@ members = [
     "contracts/xp-token",
     "contracts/factory",
     "contracts/test-level",
+    "contracts/levels/*",
 ]
 resolver = "2"
 
