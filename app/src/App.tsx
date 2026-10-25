@@ -34,7 +34,6 @@ const AppLayout = () => (
 
 		<header className={styles.header}>
 			<Link to="/" className={styles.logo}>
-				<img src="/logo.svg" alt="" className={styles.logoMark} />
 				<span className={styles.prompt}>&gt;</span> drain_my_wallet
 				<span className="cursor" />
 			</Link>
