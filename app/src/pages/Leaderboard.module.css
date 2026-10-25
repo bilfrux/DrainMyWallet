@@ -1,0 +1,109 @@
+.Leaderboard {
+	display: flex;
+	flex-direction: column;
+	gap: 1.75rem;
+}
+
+.path {
+	margin: 0;
+	color: var(--color-text-muted);
+	font-size: 0.85rem;
+}
+
+.title {
+	margin: 0.25rem 0 0.75rem;
+	font-size: clamp(2.5rem, 8vw, 4.5rem);
+}
+
+.sub {
+	max-width: 62ch;
+	margin: 0;
+	color: var(--color-text-muted);
+}
+
+.table {
+	width: 100%;
+	border-collapse: collapse;
+	font-variant-numeric: tabular-nums;
+}
+
+.table th {
+	text-align: left;
+	font-weight: 400;
+	font-size: 0.7rem;
+	text-transform: uppercase;
+	letter-spacing: 0.1em;
+	color: var(--color-text-muted);
+	padding: 0 0.75rem 0.5rem;
+	border-bottom: 1px solid var(--color-border);
+}
+
+.table td {
+	padding: 0.6rem 0.75rem;
+	border-bottom: 1px dashed var(--color-border);
+	font-size: 0.85rem;
+	word-break: break-all;
+}
+
+.table th:last-child,
+.xp {
+	text-align: right;
+}
+
+.rank {
+	width: 4rem;
+	font-family: var(--font-display);
+	font-size: 1.5rem;
+	color: var(--color-text-muted);
+}
+
+.podium .rank,
+.podium .xp {
+	color: var(--color-accent);
+	text-shadow: var(--glow);
+}
+
+.xp {
+	font-family: var(--font-display);
+	font-size: 1.5rem;
+}
+
+.you {
+	background: rgba(0, 255, 65, 0.1);
+}
+
+.youTag {
+	margin-left: 0.5rem;
+	padding: 0 0.35rem;
+	font-size: 0.65rem;
+	text-transform: uppercase;
+	background: var(--color-accent);
+	color: #000;
+}
+
+.short {
+	display: none;
+}
+
+.muted {
+	margin: 0;
+	color: var(--color-text-muted);
+}
+
+.error {
+	color: var(--color-error);
+}
+
+.refresh {
+	margin-top: 1rem;
+}
+
+@media (max-width: 720px) {
+	.full {
+		display: none;
+	}
+
+	.short {
+		display: inline;
+	}
+}

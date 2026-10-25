@@ -1,104 +1,134 @@
-import { labPrefix } from "@stellar-scaffold/app-lib"
+import { connectWallet } from "@stellar-scaffold/app-lib"
 import React from "react"
 import { Link } from "react-router-dom"
-import { GuessTheNumber } from "../components/GuessTheNumber"
+import Terminal from "../components/Terminal"
+import Typewriter from "../components/Typewriter"
+import { REPO_URL } from "../game/config"
+import { levels, pad } from "../game/levels"
+import { useCountUp } from "../hooks/useCountUp"
+import {
+	useGameStatus,
+	useInstances,
+	useProgress,
+	useXp,
+} from "../hooks/useGame"
+import { useWallet } from "../hooks/useWallet"
 import styles from "./Home.module.css"
 
-const Home: React.FC = () => (
-	<div className={styles.Home}>
-		<div>
-			<h1>Yay! You&apos;re on Stellar!</h1>
-			<p>
-				A local development template designed to help you build dApps on the
-				Stellar network. This environment lets you easily test wallet
-				connections, smart contract interactions, transaction verifications,
-				etc.{" "}
-				<Link to="https://scaffoldstellar.org/docs/intro" target="_blank">
-					View docs
-				</Link>
-			</p>
-		</div>
+type Status = "solved" | "in-progress" | "locked"
 
-		<div className="card">
-			<h2>Sample Contracts</h2>
-			<p>
-				<strong>Guess The Number:</strong> Interact with the sample contract
-				from the{" "}
-				<Link
-					to="https://scaffoldstellar.org/docs/tutorial/overview"
-					target="_blank"
-				>
-					Scaffold Tutorial
-				</Link>{" "}
-				using an automatically generated contract client.
-			</p>
-			<GuessTheNumber />
-			<p>Or take a look at other sample contracts to get you started:</p>
-			<nav className={styles.contractNav}>
-				<a
-					href="https://github.com/OpenZeppelin/stellar-contracts/tree/main/examples"
-					target="_blank"
-					rel="noreferrer"
-				>
-					OpenZeppelin sample contracts
-				</a>
-				<a
-					href="https://github.com/stellar/soroban-examples"
-					target="_blank"
-					rel="noreferrer"
-				>
-					Soroban sample contracts
-				</a>
-			</nav>
-		</div>
+const STATUS_LABEL: Record<Status, string> = {
+	solved: "[ PWNED ]",
+	"in-progress": "[ IN PROGRESS ]",
+	locked: "[ LOCKED ]",
+}
 
-		<div className="card">
-			<h2>Start Building</h2>
-			<ol>
-				<li>
-					Add your contract under <code>/src/contracts</code>
-				</li>
-				<li>
-					Contracts are built by Scaffold when you run <code>npm start</code>
-				</li>
-				<li>
-					Changes are rebuilt automatically by <code>Vite</code>
-				</li>
-				<li>
-					Interact with your contract immediately in the Contract Explorer
-				</li>
-			</ol>
-			<p>
-				Watch the full process in our{" "}
-				<Link to="https://www.youtube.com/watch?v=86hWe8Ragtg&list=PLmr3tp_7-7Gjj6gn5-bBn-QTMyaWzwOU5&index=1">
-					Youtube tutorial
-				</Link>
-				<br />
-				Get inspired by our showcase of{" "}
-				<Link to="https://scaffoldstellar.org/showcase">Example frontends</Link>
-				<br />
-				Ready to deploy?{" "}
-				<Link to="https://developers.stellar.org/docs/tools/cli/install-cli">
-					Read the mainnet deployment guide
-				</Link>
-			</p>
-		</div>
+const PITCH =
+	"Every level is a deliberately vulnerable Soroban contract. Deploy your own instance on testnet, break it from your terminal, then come back and let the chain verify you won."
 
-		<section className={styles.cards}>
-			<div className="card">
-				<p>
-					Invoke your smart contract using the{" "}
-					<Link to="/debug">Contract Explorer</Link>
+const Home: React.FC = () => {
+	const { address } = useWallet()
+	const { configured } = useGameStatus()
+	const { data: solved } = useProgress()
+	const { data: instances } = useInstances(levels.map((l) => l.id))
+	const { data: xp } = useXp()
+	const xpShown = useCountUp(Number(xp ?? 0n))
+
+	const statusOf = (id: number): Status =>
+		solved?.includes(id)
+			? "solved"
+			: instances?.get(id)
+				? "in-progress"
+				: "locked"
+
+	const maxXp = levels.reduce((sum, l) => sum + l.xp, 0)
+
+	return (
+		<div className={styles.Home}>
+			<section className={styles.hero}>
+				<p className={styles.boot}>
+					root@meridian:~# ./wargame --network testnet
 				</p>
-			</div>
-			<div className="card">
-				<p>
-					Browse your local transactions with the{" "}
-					<Link to={labPrefix()}>Transaction Explorer</Link>
+				<h1 className={styles.title} data-text="DRAIN MY WALLET">
+					DRAIN MY WALLET
+				</h1>
+				<p className={styles.pitch}>
+					<Typewriter text={PITCH} />
 				</p>
-			</div>
-		</section>
-	</div>
-)
+				<p className={styles.subpitch}>
+					Ethernaut trained a generation of Ethereum developers. Soroban
+					doesn&apos;t play by the same rules, so it gets its own training
+					ground.{" "}
+					<a href={REPO_URL} target="_blank" rel="noreferrer">
+						Read the source ↗
+					</a>
+				</p>
+			</section>
+
+			<Terminal title="~/player/stats">
+				{address ? (
+					<div className={styles.stats}>
+						<div>
+							<span className={styles.statLabel}>$DRAIN earned</span>
+							<span className={styles.statValue}>
+								{xpShown.toLocaleString()}
+							</span>
+							<span className={styles.statMax}>/ {maxXp} XP</span>
+						</div>
+						<div>
+							<span className={styles.statLabel}>levels pwned</span>
+							<span className={styles.statValue}>{solved?.length ?? 0}</span>
+							<span className={styles.statMax}>/ {levels.length}</span>
+						</div>
+					</div>
+				) : (
+					<div className={styles.connect}>
+						<p>
+							<span className={styles.muted}>$</span> whoami
+							<br />
+							<span className={styles.muted}>
+								anonymous. connect a testnet wallet to track your progress.
+							</span>
+						</p>
+						<button onClick={() => void connectWallet()}>Connect wallet</button>
+					</div>
+				)}
+				{!configured && (
+					<p className={styles.offline}>
+						! factory contract not configured: set{" "}
+						<code>PUBLIC_FACTORY_CONTRACT_ID</code> in <code>app/.env</code>
+					</p>
+				)}
+			</Terminal>
+
+			<Terminal title="~/levels — ls -la">
+				<ol className={styles.levels}>
+					{levels.map((level) => {
+						const status = statusOf(level.id)
+						return (
+							<li key={level.id}>
+								<Link
+									to={`/level/${level.id}`}
+									className={`${styles.level} ${styles[status]}`}
+								>
+									<span className={styles.levelId}>{pad(level.id)}</span>
+									<span className={styles.levelName}>
+										{level.name}
+										{level.bonus && <span className={styles.bonus}>bonus</span>}
+									</span>
+									<span className={styles.levelGoal}>{level.goal}</span>
+									<span className={styles.levelXp}>+{level.xp} XP</span>
+									<span className={styles.levelStatus}>
+										{STATUS_LABEL[status]}
+									</span>
+								</Link>
+							</li>
+						)
+					})}
+				</ol>
+			</Terminal>
+		</div>
+	)
+}
 
 export default Home
