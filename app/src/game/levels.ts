@@ -1,3 +1,21 @@
+export type Category = "Auth" | "Arithmetic" | "Storage" | "Cross-contract"
+
+/** The classes of bug the game teaches, in the order the filters list them */
+export const CATEGORIES: Category[] = [
+	"Auth",
+	"Arithmetic",
+	"Storage",
+	"Cross-contract",
+]
+
+export type Difficulty = 1 | 2 | 3
+
+export const DIFFICULTY_LABEL: Record<Difficulty, string> = {
+	1: "Easy",
+	2: "Medium",
+	3: "Hard",
+}
+
 export interface Level {
 	id: number
 	/** Directory under `contracts/levels/` */
@@ -7,6 +25,8 @@ export interface Level {
 	goal: string
 	hint: string
 	xp: number
+	category: Category
+	difficulty: Difficulty
 	bonus?: boolean
 	/** Shows the step-by-step walkthrough instead of the bare instance panel */
 	guided?: boolean
@@ -38,6 +58,8 @@ const LEVELS: Omit<Level, "source">[] = [
 	{
 		id: 1,
 		slug: "01-open-door",
+		category: "Auth",
+		difficulty: 1,
 		name: "Open Door",
 		story:
 			"A vault holds 1,000 tokens behind a heavy steel door. The architect spent weeks on the deposit logic, and about five minutes on the way out.",
@@ -50,6 +72,8 @@ const LEVELS: Omit<Level, "source">[] = [
 	{
 		id: 2,
 		slug: "02-crown",
+		category: "Auth",
+		difficulty: 1,
 		name: "Crown",
 		story:
 			"The contract crowned its admin on day one. Nobody thought to check whether the coronation could happen twice.",
@@ -61,6 +85,8 @@ const LEVELS: Omit<Level, "source">[] = [
 	{
 		id: 3,
 		slug: "03-wrong-signer",
+		category: "Auth",
+		difficulty: 2,
 		name: "Wrong Signer",
 		story:
 			"A tiny ledger lets you withdraw on behalf of an account. It checks your signature very carefully. Just not against the right account.",
@@ -71,6 +97,8 @@ const LEVELS: Omit<Level, "source">[] = [
 	{
 		id: 4,
 		slug: "04-fatal-cast",
+		category: "Arithmetic",
+		difficulty: 2,
 		name: "Fatal Cast",
 		story:
 			"Rewards are capped at 100. The developer double-checked the comparison. The comparison is fine. The type is not.",
@@ -81,6 +109,8 @@ const LEVELS: Omit<Level, "source">[] = [
 	{
 		id: 5,
 		slug: "05-forgetful-list",
+		category: "Storage",
+		difficulty: 2,
 		name: "Forgetful List",
 		story:
 			"You've been banned. The ban list is written down, but in ink that fades.",
@@ -93,6 +123,8 @@ const LEVELS: Omit<Level, "source">[] = [
 	{
 		id: 6,
 		slug: "06-counterfeit",
+		category: "Cross-contract",
+		difficulty: 3,
 		name: "Counterfeit",
 		story:
 			"The vault gives you credit for whatever token you hand over. It never asked where the token came from, only whether the transfer went through.",

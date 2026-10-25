@@ -77,7 +77,7 @@ You can create a fresh instance of a level at any time. Solving a level twice mi
 - **Game asset**: `LOOT`, a classic Stellar asset issued by the game admin and used through its Stellar Asset Contract.
 - **Frontend** (`app/`, `app-lib/`): React + Vite from [Scaffold Stellar](https://github.com/stellar-scaffold/cli), using Stellar Wallets Kit. Four pages:
   - `/` is a scroll-driven 3D intro built with [three.js](https://threejs.org): a neon wallet pours XLM coins, the camera dives through it and down a tunnel to a vault door that opens onto a room of coins. It is lazy-loaded, pauses off screen, and falls back to plain cards with reduced motion or without WebGL.
-  - `/play` lists the levels with the player's progress and XP.
+  - `/play` is the level list, Root-Me style: each level has a category (Auth, Arithmetic, Storage, Cross-contract), a difficulty, its XP and how many players have solved it (counted from the factory's events). Filter by category or difficulty, hide solved levels, or sort by level, difficulty, XP or solves.
   - `/level/:id` shows the story, the contract source, a hint, and the instance controls. Level 1 opens with a step-by-step walkthrough that follows the player's progress on-chain (wallet, funded account, instance, and the vault balance polled until it is empty).
   - `/leaderboard` rebuilds the player list from the factory's `level_solved` events and reads each `$DRAIN` balance.
 

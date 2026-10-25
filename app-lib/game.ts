@@ -285,41 +285,64 @@ const decode = (val: xdr.ScVal): unknown => {
 
 const LEVEL_SOLVED = xdr.ScVal.scvSymbol("level_solved").toXDR("base64")
 
+interface SolvedEvent {
+	player: string
+	levelId: number
+}
+
+let solvedScan: { at: number; promise: Promise<SolvedEvent[]> } | undefined
+
 /**
- * Players come from the factory's `level_solved` events (topics: name,
- * player, level_id) within the RPC retention window, then get ranked by their
- * $DRAIN balance. RPC scans a bounded ledger range per request and can return
- * an empty page with a cursor, so page until the cursor reaches the tip.
+ * Every `level_solved` event of the factory (topics: name, player, level_id)
+ * within the RPC retention window. RPC scans a bounded ledger range per request
+ * and can return an empty page with a cursor, so page until the cursor reaches
+ * the tip. The leaderboard and the per-level solve counts share one scan.
  */
-export const fetchLeaderboard = async (): Promise<LeaderboardEntry[]> => {
-	const factoryId = requireFactory()
-	const { oldestLedger, latestLedger } = await server.getHealth()
-	const players = new Set<string>()
-	const filters: rpc.Api.EventFilter[] = [
-		{
-			type: "contract",
-			contractIds: [factoryId],
-			topics: [[LEVEL_SOLVED, "*", "*"]],
-		},
-	]
-
-	let request: rpc.Api.GetEventsRequest = {
-		filters,
-		startLedger: oldestLedger,
-		limit: 1000,
+const scanSolved = (): Promise<SolvedEvent[]> => {
+	if (solvedScan && Date.now() - solvedScan.at < 30_000) {
+		return solvedScan.promise
 	}
-	for (let page = 0; page < 50; page++) {
-		const { events, cursor } = await server.getEvents(request)
-		for (const event of events) {
-			const player = event.topic[1] && decode(event.topic[1])
-			if (typeof player === "string") players.add(player)
+	const promise = (async () => {
+		const factoryId = requireFactory()
+		const { oldestLedger, latestLedger } = await server.getHealth()
+		const found: SolvedEvent[] = []
+		const filters: rpc.Api.EventFilter[] = [
+			{
+				type: "contract",
+				contractIds: [factoryId],
+				topics: [[LEVEL_SOLVED, "*", "*"]],
+			},
+		]
+
+		let request: rpc.Api.GetEventsRequest = {
+			filters,
+			startLedger: oldestLedger,
+			limit: 1000,
 		}
-		// Cursors are "<toid>-<index>"; the ledger is the toid's high 32 bits
-		const scanned = Number(BigInt(cursor.split("-")[0] ?? "0") >> 32n)
-		if (scanned >= latestLedger) break
-		request = { filters, cursor, limit: 1000 }
-	}
+		for (let page = 0; page < 50; page++) {
+			const { events, cursor } = await server.getEvents(request)
+			for (const event of events) {
+				const player = event.topic[1] && decode(event.topic[1])
+				const levelId = event.topic[2] && decode(event.topic[2])
+				if (typeof player === "string" && typeof levelId === "number") {
+					found.push({ player, levelId })
+				}
+			}
+			// Cursors are "<toid>-<index>"; the ledger is the toid's high 32 bits
+			const scanned = Number(BigInt(cursor.split("-")[0] ?? "0") >> 32n)
+			if (scanned >= latestLedger) break
+			request = { filters, cursor, limit: 1000 }
+		}
+		return found
+	})()
+	solvedScan = { at: Date.now(), promise }
+	promise.catch(() => (solvedScan = undefined))
+	return promise
+}
 
+/** Players ranked by their $DRAIN balance. */
+export const fetchLeaderboard = async (): Promise<LeaderboardEntry[]> => {
+	const players = new Set((await scanSolved()).map((e) => e.player))
 	const entries = await Promise.all(
 		[...players].map(async (address) => ({
 			address,
@@ -329,6 +352,17 @@ export const fetchLeaderboard = async (): Promise<LeaderboardEntry[]> => {
 	return entries
 		.filter((e) => e.xp > 0n)
 		.sort((a, b) => (b.xp > a.xp ? 1 : b.xp < a.xp ? -1 : 0))
+}
+
+/** How many distinct players have solved each level. */
+export const fetchSolveCounts = async (): Promise<Map<number, number>> => {
+	const byLevel = new Map<number, Set<string>>()
+	for (const { player, levelId } of await scanSolved()) {
+		const set = byLevel.get(levelId) ?? new Set<string>()
+		set.add(player)
+		byLevel.set(levelId, set)
+	}
+	return new Map([...byLevel].map(([id, players]) => [id, players.size]))
 }
 
 /** Testnet explorer links (stellar.expert). */
