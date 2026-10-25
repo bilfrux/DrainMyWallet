@@ -129,6 +129,7 @@ export const createLandingScene = (
 	const renderer = new THREE.WebGLRenderer({
 		canvas,
 		antialias: !opts.lowPower,
+		alpha: true,
 		powerPreference: "high-performance",
 	})
 	renderer.setPixelRatio(
@@ -418,30 +419,6 @@ export const createLandingScene = (
 	})
 	const placer = new THREE.Object3D()
 
-	// A huge, dim vault wheel far behind the coins, so the room has a back wall
-	const backWheel = new THREE.Group()
-	backWheel.position.z = VAULT_ROOM - 40
-	const backMaterial = neon(2.4, 0)
-	for (const radius of [26, 20, 14, 6]) {
-		backWheel.add(
-			new LineSegments2(segmentsOf(circlePoints(radius, 96)), backMaterial),
-		)
-	}
-	const backSpokes: number[] = []
-	for (let i = 0; i < 8; i++) {
-		const a = (i / 8) * Math.PI * 2
-		backSpokes.push(
-			Math.cos(a) * 6,
-			Math.sin(a) * 6,
-			0,
-			Math.cos(a) * 26,
-			Math.sin(a) * 26,
-			0,
-		)
-	}
-	backWheel.add(new LineSegments2(segmentsOf(backSpokes), backMaterial))
-	backWheel.visible = false
-	scene.add(backWheel)
 	scene.add(fieldMesh)
 
 	// ── Post-processing: bloom makes the lines glow ──────────────────────
@@ -473,6 +450,9 @@ export const createLandingScene = (
 
 		// The camera path: a slow approach, a dive through the wallet, a long
 		// flight down the tunnel, then straight through the vault door.
+		// Through the flash the glow is rendered by the composer; after it the
+		// scene is drawn straight to the screen (anti-aliased, and with alpha)
+		const composerOn = !!composer && progress < FLASH_AT + 0.03
 		let z: number
 		let eased: number
 		if (progress < DOOR_APPROACH) {
@@ -528,18 +508,10 @@ export const createLandingScene = (
 		// The coin field fades in as the camera comes through the door
 		fieldMaterial.opacity = smooth(FLASH_AT, DOOR_THROUGH + 0.03, progress)
 		fieldMesh.visible = progress > FLASH_AT
-		// The room: a deep green instead of black, with a slowly turning back wall
-		const room = smooth(FLASH_AT, DOOR_THROUGH + 0.01, progress)
-		backWheel.visible = room > 0.01
-		backMaterial.opacity = 0.42 * room
-		backWheel.rotation.z = time * 0.05
-		background.setRGB(
-			lerp(0, 0.004, room),
-			lerp(0.03, 0.12, room),
-			lerp(0.008, 0.045, room),
-		)
-		renderer.setClearColor(background, 1)
-		;(scene.fog as THREE.FogExp2).color.copy(background)
+		// In the vault room the 3D background goes transparent, so the site's own
+		// falling digits show behind the coins, as on every other page.
+		const room = smooth(FLASH_AT + 0.03, DOOR_THROUGH + 0.01, progress)
+		renderer.setClearColor(background, composerOn ? 1 : 1 - room)
 		if (fieldMesh.visible) {
 			field.forEach((c, i) => {
 				placer.position.set(
@@ -574,7 +546,7 @@ export const createLandingScene = (
 
 		// Once the glow is off, render straight to the screen: the composer's
 		// buffers have no anti-aliasing and the coin edges would be jagged
-		if (composer && progress < 0.985) composer.render()
+		if (composerOn) composer?.render()
 		else renderer.render(scene, camera)
 	}
 

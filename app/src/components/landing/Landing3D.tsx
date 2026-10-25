@@ -114,7 +114,6 @@ const Landing3D = () => {
 	const hintRef = useRef<HTMLDivElement>(null)
 	const barRef = useRef<HTMLDivElement>(null)
 	const flashRef = useRef<HTMLDivElement>(null)
-	const lightRef = useRef<HTMLDivElement>(null)
 	const enterRef = useRef<HTMLButtonElement>(null)
 	const [animated] = useState(shouldAnimate)
 	const [loading, setLoading] = useState(animated)
@@ -173,11 +172,6 @@ const Landing3D = () => {
 			})
 			if (hintRef.current)
 				hintRef.current.style.opacity = String(1 - clamp01(p / 0.04))
-			// The vault room's light comes up after the flash, with the coins
-			if (lightRef.current) {
-				const t = clamp01((p - 0.94) / 0.04)
-				lightRef.current.style.opacity = String(t * t * (3 - 2 * t))
-			}
 			if (flashRef.current) {
 				const f = clamp01(1 - Math.abs(p - FLASH_AT) / FLASH_WIDTH)
 				flashRef.current.style.opacity = String(f * f)
@@ -338,7 +332,6 @@ const Landing3D = () => {
 				<canvas ref={canvasRef} className={styles.canvas} aria-hidden="true" />
 				<div className={styles.vignette} aria-hidden="true" />
 				<div ref={flashRef} className={styles.flash} aria-hidden="true" />
-				<div ref={lightRef} className={styles.vaultLight} aria-hidden="true" />
 				{loading && <p className={styles.loading}>booting renderer…</p>}
 
 				{CHAPTERS.map((c, i) => (
