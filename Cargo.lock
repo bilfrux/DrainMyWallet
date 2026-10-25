@@ -916,6 +916,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "level-05-forgetful-list"
+version = "0.0.2"
+dependencies = [
+ "soroban-sdk",
+]
+
+[[package]]
 name = "libc"
 version = "0.2.172"
 source = "registry+https://github.com/rust-lang/crates.io-index"

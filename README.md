@@ -20,9 +20,11 @@ Every level has exactly one intended vulnerability. Finding it is the game, so i
 | 2 | Crown | Become admin | 200 |
 | 3 | Wrong Signer | Drain the victim's balance into yours | 300 |
 | 4 | Fatal Cast | Credit yourself an absurd balance | 400 |
-| 5 | Forgetful List *(bonus)* | Not built yet | 500 |
+| 5 | Forgetful List | Claim a perk you are banned from | 500 |
 
 Each level ships with an exploit as a `cargo test` in its own `test` module, so no level can turn out impossible.
+
+Level 5 depends on time: a temporary storage entry lasts at least 720 ledgers on testnet, about an hour. Create your instance first and come back to it.
 
 ## How to play
 
@@ -84,6 +86,7 @@ Stellar **testnet**. Also in [`deployments/testnet.env`](deployments/testnet.env
 | Level 2 Wasm hash | `8818e2d882fbd130cfdebd84df566323492a9db8b9f4e0e639ccfb830a0a965e` |
 | Level 3 Wasm hash | `40d935e48ec216e57214056677692d95e03f79d9c99eec044ab9a1debfb1ca17` |
 | Level 4 Wasm hash | `f39265409ce1d03658a2b8809146fcf86c34e2e7a4733b5a2f164dc199e3e913` |
+| Level 5 Wasm hash | `19174be6938611f0a95a98105c0ad7553122b9dcf7105221323420318b8bb3a9` |
 
 All four levels were played end to end on these contracts with a fresh account (create instance, exploit, submit, XP minted once, a second submit mints nothing). The player `GAIX3VXN2IY354E7QCKIWP2IQUCB2QOD6AW6HILXG5SN2EYICNTTSAPM` holds the resulting 1000 `$DRAIN` and can be looked up on [Stellar Expert](https://stellar.expert/explorer/testnet/account/GAIX3VXN2IY354E7QCKIWP2IQUCB2QOD6AW6HILXG5SN2EYICNTTSAPM).
 
@@ -137,7 +140,7 @@ Set in `app/.env` (see `app/.env.example`). Variables prefixed `PUBLIC_` reach t
 contracts/
 ├── factory/        deploys instances, verifies wins, mints XP
 ├── xp-token/       $DRAIN, non-transferable
-├── levels/         01-open-door, 02-crown, 03-wrong-signer, 04-fatal-cast
+├── levels/         01-open-door, 02-crown, 03-wrong-signer, 04-fatal-cast, 05-forgetful-list
 ├── test-level/     fixture used only by the factory tests
 └── guess-the-number/   Scaffold example, kept as a reference
 app/, app-lib/      frontend and wallet helpers (Scaffold Stellar)
