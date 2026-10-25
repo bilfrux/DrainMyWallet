@@ -25,7 +25,7 @@ stellar contract invoke --id $FACTORY --network testnet --source-account me \
   -- submit --player $ME --level_id <N>
 ```
 
-Levels 1, 2 and 6 pay out in `LOOT`: open a trustline first.
+Levels 1, 2, 6 and 9 pay out in `LOOT`: open a trustline first.
 
 ```bash
 stellar tx new change-trust --line $LOOT --source-account me --network testnet
@@ -129,3 +129,46 @@ stellar contract invoke --id $INSTANCE --network testnet --source-account me \
 Your account needs a `LOOT` trustline to receive the payout. The attacker contract is the whole of the code that makes the level hard: it is only an empty `transfer(from, to, amount)`.
 
 **Fix.** Compare `token` with the token stored at construction and reject anything else. Never trust an address the caller hands you to behave like a token, an oracle or anything else you rely on.
+
+## 7. Negative Space
+
+**Bug.** `send(from, to, amount)` checks `from_balance < amount` but never that `amount` is positive. With a negative amount the check passes for anyone (`0 >= -1000`), the sender's balance goes *up* (`balance - (-1000)`), and the receiver's goes *down*. The treasury never signed anything: only `from.require_auth()` is asked, and that is the attacker.
+
+**Exploit.** "Send" a negative amount to the treasury (the contract's own address):
+
+```bash
+stellar contract invoke --id $INSTANCE --network testnet --source-account me \
+  -- send --from $ME --to $INSTANCE --amount=-1000
+```
+
+Use `--amount=-1000` with the equals sign, or the CLI reads the minus as a flag. The treasury ends at 0 and you hold 1000.
+
+**Fix.** Reject `amount <= 0` at the top of `send`. Signed integers are the default in Soroban token interfaces (`i128`), so sign checks are on you.
+
+## 8. Name Clash
+
+**Bug.** `add_delegate` writes `storage.set(&name, &who)`, with `name` chosen by the caller, while the contract keeps its own admin under the raw key `symbol_short!("admin")` in the same storage. Keys are just values: a delegate called `admin` overwrites the admin.
+
+**Exploit.**
+
+```bash
+stellar contract invoke --id $INSTANCE --network testnet --source-account me \
+  -- add_delegate --caller $ME --name admin --who $ME
+```
+
+`admin()` then returns your address.
+
+**Fix.** Never use caller-controlled values as raw storage keys. Wrap them in a typed key (`DataKey::Delegate(name)`), so they live in a different namespace from `DataKey::Admin`.
+
+## 9. Time Warp
+
+**Bug.** The lock is stored as a **ledger sequence** (`sequence() + 1_000_000`) but checked against the **timestamp**: `env.ledger().timestamp() < unlock_at as u64`. A timestamp is seconds since 1970 (about 1.8 billion today), a ledger sequence is a few million. The comparison is false from the very first call, so the "two month" lock is already open.
+
+**Exploit.** Read `unlock_at()` if you like (a small ledger number), then:
+
+```bash
+stellar contract invoke --id $INSTANCE --network testnet --source-account me \
+  -- withdraw --to <an account with a LOOT trustline>
+```
+
+**Fix.** Compare like with like: `env.ledger().sequence() < unlock_at`, or store a timestamp and compare timestamps. Name variables with their unit (`unlock_ledger`, `unlock_timestamp`).
