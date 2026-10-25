@@ -24,7 +24,18 @@ export interface LandingScene {
 
 const GREEN = 0x00ff41
 const CAMERA_START = 17
-const CAMERA_END = -72
+/** Scroll progress at which the camera reaches the vault door, and the one at which it is through. */
+const DOOR_APPROACH = 0.78
+const DOOR_THROUGH = 0.92
+const TUNNEL_END = -72
+const VAULT_ROOM = -106
+/** Progress of the flash as the camera crosses the door; the page overlay uses the same value */
+export const FLASH_AT = 0.87
+export const FLASH_WIDTH = 0.035
+const smooth = (a: number, b: number, v: number) => {
+	const t = clamp01((v - a) / (b - a))
+	return t * t * (3 - 2 * t)
+}
 const DOOR_Z = -90
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v))
@@ -324,6 +335,7 @@ export const createLandingScene = (
 	scene.add(dustPoints)
 
 	// ── Vault door ───────────────────────────────────────────────────────
+	const doorMaterialsFrom = lineMaterials.length
 	const door = new THREE.Group()
 	door.position.z = DOOR_Z
 	const wheel = new THREE.Group()
@@ -366,6 +378,33 @@ export const createLandingScene = (
 	}
 	door.add(new LineSegments2(segmentsOf(bolts), neon(5)))
 	scene.add(door)
+	const doorMaterials = lineMaterials.slice(doorMaterialsFrom)
+
+	// ── Inside the vault: coins drifting in the dark ─────────────────────
+	const treasureCount = opts.lowPower ? 90 : 220
+	const treasure = new Float32Array(treasureCount * 3)
+	for (let i = 0; i < treasureCount; i++) {
+		const a = Math.random() * Math.PI * 2
+		const r = 2.5 + Math.random() * 13
+		treasure[i * 3] = Math.cos(a) * r
+		treasure[i * 3 + 1] = Math.sin(a) * r
+		treasure[i * 3 + 2] = -96 - Math.random() * 44
+	}
+	const treasureGeometry = new THREE.BufferGeometry()
+	treasureGeometry.setAttribute(
+		"position",
+		new THREE.BufferAttribute(treasure, 3),
+	)
+	const treasureMaterial = new THREE.PointsMaterial({
+		map: coin,
+		size: 1.9,
+		transparent: true,
+		opacity: 0,
+		alphaTest: 0.05,
+		depthWrite: false,
+	})
+	const treasurePoints = new THREE.Points(treasureGeometry, treasureMaterial)
+	scene.add(treasurePoints)
 
 	// ── Post-processing: bloom makes the lines glow ──────────────────────
 	let composer: EffectComposer | undefined
@@ -394,10 +433,22 @@ export const createLandingScene = (
 		last = now
 		time += dt
 
-		// The camera path: a slow approach, a dive through the wallet, then a
-		// long flight down the tunnel. A little ease keeps the start gentle.
-		const eased = lerp(progress, progress * progress * (3 - 2 * progress), 0.45)
-		const z = lerp(CAMERA_START, CAMERA_END, eased)
+		// The camera path: a slow approach, a dive through the wallet, a long
+		// flight down the tunnel, then straight through the vault door.
+		let z: number
+		let eased: number
+		if (progress < DOOR_APPROACH) {
+			const q = progress / DOOR_APPROACH
+			eased = lerp(q, q * q * (3 - 2 * q), 0.45)
+			z = lerp(CAMERA_START, TUNNEL_END, eased)
+		} else {
+			eased = 1
+			z = lerp(
+				TUNNEL_END,
+				VAULT_ROOM,
+				smooth(DOOR_APPROACH, DOOR_THROUGH, progress),
+			)
+		}
 		camera.position.x += (pointerX * 1.6 - camera.position.x) * 0.05
 		camera.position.y += (pointerY * 1.0 - camera.position.y) * 0.05
 		camera.position.z = z
@@ -421,13 +472,23 @@ export const createLandingScene = (
 		rings.children.forEach((ring, i) => {
 			ring.rotation.z = i * 0.21 + time * 0.12 * (i % 2 ? 1 : -1)
 		})
-		wheel.rotation.z = time * 0.25 - progress * 4
+		const open = smooth(0.76, FLASH_AT, progress)
+		wheel.rotation.z = time * 0.25 - progress * 4 + open * open * 14
+		// The door swells and splits as the camera reaches it, then is gone
+		door.scale.setScalar(1 + open * 1.6)
+		const doorAlpha = 1 - smooth(FLASH_AT - 0.01, FLASH_AT + 0.03, progress)
+		doorMaterials.forEach((m) => (m.opacity = doorAlpha))
+		treasureMaterial.opacity = smooth(FLASH_AT, DOOR_THROUGH + 0.02, progress)
+		treasurePoints.rotation.z = time * 0.03
 		door.rotation.z = Math.sin(time * 0.15) * 0.05
 		dustPoints.rotation.z = time * 0.02
 
 		uniforms.uTime.value = time
-		bloom &&
-			(bloom.strength = 0.7 + 0.5 * Math.sin(time * 0.9) * 0.2 + progress * 0.5)
+		if (bloom) {
+			const flash = clamp01(1 - Math.abs(progress - FLASH_AT) / FLASH_WIDTH)
+			bloom.strength =
+				0.7 + 0.5 * Math.sin(time * 0.9) * 0.2 + progress * 0.5 + flash * 1.4
+		}
 
 		if (composer) composer.render()
 		else renderer.render(scene, camera)
@@ -474,6 +535,7 @@ export const createLandingScene = (
 			})
 			lineMaterials.forEach((m) => m.dispose())
 			coin.dispose()
+			treasureMaterial.dispose()
 			drainMaterial.dispose()
 			ringMaterial.dispose()
 			composer?.dispose()

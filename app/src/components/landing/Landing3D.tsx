@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import styles from "./Landing3D.module.css"
-import { type LandingScene } from "./scene"
+import { FLASH_AT, FLASH_WIDTH, type LandingScene } from "./scene"
 
 interface Chapter {
 	id: string
@@ -21,7 +21,7 @@ const CHAPTERS: Chapter[] = [
 		title: "DRAIN MY WALLET",
 		body: "A security wargame for Soroban. Break real smart contracts, on testnet, with nothing to lose.",
 		from: -1,
-		to: 0.12,
+		to: 0.1,
 		side: "center",
 	},
 	{
@@ -29,8 +29,8 @@ const CHAPTERS: Chapter[] = [
 		kicker: "01 / THE IDEA",
 		title: "Every level is a broken contract.",
 		body: "Each one hides exactly one bug, the kind that really ships to production. Your job is to find it, then drain it.",
-		from: 0.17,
-		to: 0.34,
+		from: 0.14,
+		to: 0.27,
 		side: "left",
 	},
 	{
@@ -38,8 +38,8 @@ const CHAPTERS: Chapter[] = [
 		kicker: "02 / YOUR OWN COPY",
 		title: "You get a private instance.",
 		body: "One click deploys a fresh copy of the level on Stellar testnet, just for you. Break it as hard as you like: nobody else's game is affected.",
-		from: 0.38,
-		to: 0.55,
+		from: 0.31,
+		to: 0.44,
 		side: "right",
 	},
 	{
@@ -47,8 +47,8 @@ const CHAPTERS: Chapter[] = [
 		kicker: "03 / BREAK IT",
 		title: "Attack from your terminal.",
 		body: "Read the code, spot the flaw, exploit it yourself with the Stellar CLI. The site never signs an exploit for you.",
-		from: 0.59,
-		to: 0.76,
+		from: 0.48,
+		to: 0.61,
 		side: "left",
 	},
 	{
@@ -56,7 +56,25 @@ const CHAPTERS: Chapter[] = [
 		kicker: "04 / PROOF",
 		title: "The chain checks your win.",
 		body: "Press Check: the contract verifies it on-chain and mints $DRAIN XP. One reward per level, and you can't fake it or transfer it.",
-		from: 0.8,
+		from: 0.65,
+		to: 0.76,
+		side: "center",
+	},
+	{
+		id: "grant",
+		kicker: "// vault.lock --release",
+		title: "ACCESS GRANTED",
+		body: "",
+		from: 0.79,
+		to: 0.85,
+		side: "center",
+	},
+	{
+		id: "final",
+		kicker: "05 / YOUR TURN",
+		title: "Six broken contracts are waiting.",
+		body: "Start with a guided level, or go straight to the list. Everything here runs on testnet: nothing real is at stake.",
+		from: 0.93,
 		to: 2,
 		side: "center",
 	},
@@ -92,6 +110,7 @@ const Landing3D = () => {
 	const dotRefs = useRef<(HTMLButtonElement | null)[]>([])
 	const hintRef = useRef<HTMLDivElement>(null)
 	const barRef = useRef<HTMLDivElement>(null)
+	const flashRef = useRef<HTMLDivElement>(null)
 	const enterRef = useRef<HTMLButtonElement>(null)
 	const [animated] = useState(shouldAnimate)
 	const [loading, setLoading] = useState(animated)
@@ -140,10 +159,14 @@ const Landing3D = () => {
 			})
 			if (hintRef.current)
 				hintRef.current.style.opacity = String(1 - clamp01(p / 0.04))
+			if (flashRef.current) {
+				const f = clamp01(1 - Math.abs(p - FLASH_AT) / FLASH_WIDTH)
+				flashRef.current.style.opacity = String(f * f)
+			}
 			if (barRef.current) barRef.current.style.transform = `scaleY(${p})`
 			// The floating button takes over once the hero's own button scrolls away
 			if (enterRef.current) {
-				const v = clamp01((p - 0.05) / 0.05) * clamp01((0.78 - p) / 0.04)
+				const v = clamp01((p - 0.05) / 0.05) * clamp01((0.9 - p) / 0.03)
 				enterRef.current.style.opacity = String(v)
 				enterRef.current.style.pointerEvents = v > 0.5 ? "auto" : "none"
 			}
@@ -228,14 +251,14 @@ const Landing3D = () => {
 	const chapterBody = (c: Chapter) => (
 		<>
 			<p className={styles.kicker}>{c.kicker}</p>
-			{c.id === "intro" ? (
+			{c.id === "intro" || c.id === "grant" ? (
 				<h1 className={styles.hero} data-text={c.title}>
 					{c.title}
 				</h1>
 			) : (
 				<h2 className={styles.title}>{c.title}</h2>
 			)}
-			<p className={styles.body}>{c.body}</p>
+			{c.body && <p className={styles.body}>{c.body}</p>}
 			{c.id === "intro" && (
 				<div className={styles.actions}>
 					<button className={styles.cta} onClick={enter}>
@@ -254,7 +277,7 @@ const Landing3D = () => {
 					<span className={styles.ok}>✓ vault emptied</span>
 				</pre>
 			)}
-			{c.id === "proof" && (
+			{c.id === "final" && (
 				<div className={styles.actions}>
 					<button className={styles.cta} onClick={enter}>
 						Enter the game ▸
@@ -288,6 +311,7 @@ const Landing3D = () => {
 			<div className={styles.stage}>
 				<canvas ref={canvasRef} className={styles.canvas} aria-hidden="true" />
 				<div className={styles.vignette} aria-hidden="true" />
+				<div ref={flashRef} className={styles.flash} aria-hidden="true" />
 				{loading && <p className={styles.loading}>booting renderer…</p>}
 
 				{CHAPTERS.map((c, i) => (
