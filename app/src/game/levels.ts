@@ -1,4 +1,9 @@
-export type Category = "Auth" | "Arithmetic" | "Storage" | "Cross-contract"
+export type Category =
+	| "Auth"
+	| "Arithmetic"
+	| "Storage"
+	| "Cross-contract"
+	| "Logic"
 
 /** The classes of bug the game teaches, in the order the filters list them */
 export const CATEGORIES: Category[] = [
@@ -6,6 +11,7 @@ export const CATEGORIES: Category[] = [
 	"Arithmetic",
 	"Storage",
 	"Cross-contract",
+	"Logic",
 ]
 
 export type Difficulty = 1 | 2 | 3
@@ -131,6 +137,43 @@ const LEVELS: Omit<Level, "source">[] = [
 		goal: "Empty the vault.",
 		hint: "In Soroban, every address can be a contract, and you can write one. What does the vault do with the token address you give it? Who decides what its transfer does?",
 		xp: 600,
+		needsTrustline: true,
+	},
+	{
+		id: 7,
+		slug: "07-negative-space",
+		category: "Arithmetic",
+		difficulty: 1,
+		name: "Negative Space",
+		story:
+			"A treasury and a ledger of points. Sending checks that you can afford it. It never asks whether the amount makes sense.",
+		goal: "Take the treasury's points for yourself.",
+		hint: "What does send do with an amount below zero? Follow the two balances: who ends up with more, and who signed for it?",
+		xp: 150,
+	},
+	{
+		id: 8,
+		slug: "08-name-clash",
+		category: "Storage",
+		difficulty: 2,
+		name: "Name Clash",
+		story:
+			"Anyone may register a delegate under a name of their choosing. The contract keeps its own secrets in the same drawer.",
+		goal: "Become the admin.",
+		hint: "Where does add_delegate write, and where does the contract keep its admin? Storage keys are just values: what if a name equals one of them?",
+		xp: 350,
+	},
+	{
+		id: 9,
+		slug: "09-time-warp",
+		category: "Logic",
+		difficulty: 2,
+		name: "Time Warp",
+		story:
+			"A savings vault locked for two months. The author counted the lock in ledgers, and checked it against the clock.",
+		goal: "Empty the vault, without waiting.",
+		hint: "Compare the two sides of the lock check. One is a ledger number, the other is a timestamp. What unit is each in, and how big is it?",
+		xp: 350,
 		needsTrustline: true,
 	},
 ]
