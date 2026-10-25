@@ -306,7 +306,7 @@ const Landing3D = () => {
 						Enter the game ▸
 					</button>
 					<Link to="/level/1" className={styles.ghost}>
-						or start with level 01 →
+						Start to drain →
 					</Link>
 				</div>
 			)}
