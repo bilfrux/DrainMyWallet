@@ -70,7 +70,8 @@
 	padding: 1rem 3rem;
 	font-size: 0.8rem;
 	color: var(--color-text-muted);
-	background: rgba(0, 0, 0, 0.7);
+	/* Opaque: the falling digits must not show through, least of all under the intro */
+	background: #000802;
 }
 
 .footerNav {

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <title>DrainMyWallet</title>
+  <rect width="64" height="64" rx="12" fill="#001a0a"/>
+  <!-- wallet -->
+  <rect x="6" y="14" width="52" height="36" rx="6" fill="#00220f" stroke="#00ff41" stroke-width="5"/>
+  <!-- clasp -->
+  <rect x="42" y="28" width="16" height="10" rx="3" fill="#00ff41"/>
+  <!-- prompt >_ -->
+  <path d="M14 26l8 6-8 6" fill="none" stroke="#00ff41" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M26 39h10" fill="none" stroke="#00ff41" stroke-width="5" stroke-linecap="round"/>
+</svg>

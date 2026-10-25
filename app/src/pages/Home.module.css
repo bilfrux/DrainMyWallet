@@ -159,7 +159,7 @@
 
 .level {
 	display: grid;
-	grid-template-columns: 3rem 12rem 1fr auto 9.5rem;
+	grid-template-columns: 3rem 12rem 1fr 4.2rem 5rem 4.5rem 9.5rem;
 	align-items: center;
 	gap: 1rem;
 	padding: 0.85rem 0.5rem;
@@ -281,4 +281,142 @@
 	.levelStatus {
 		grid-area: status;
 	}
+
+	.pips,
+	.levelSolves {
+		display: none;
+	}
+
+	.sort {
+		margin-left: 0;
+	}
+}
+
+.anchor {
+	scroll-margin-top: 1rem;
+	margin-top: -1rem;
+}
+
+/* ── Filters, categories and difficulty ───────────────── */
+
+.filters {
+	display: grid;
+	gap: 0.6rem;
+	padding: 0.2rem 0.5rem 1rem;
+	border-bottom: 1px solid var(--color-border);
+}
+
+.chips {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+.chip {
+	padding: 0.25rem 0.7rem;
+	font-size: 0.72rem;
+	border-color: var(--color-border);
+	color: var(--color-text-muted);
+}
+
+.chip em {
+	margin-left: 0.3rem;
+	font-style: normal;
+	opacity: 0.7;
+}
+
+.chip[aria-pressed="true"] {
+	border-color: var(--color-accent);
+	color: #00140a;
+	background: var(--color-accent);
+	box-shadow: var(--glow);
+}
+
+.check,
+.sort {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.4rem;
+	font-size: 0.75rem;
+	letter-spacing: 0.05em;
+	text-transform: uppercase;
+	color: var(--color-text-muted);
+	cursor: pointer;
+}
+
+.sort {
+	margin-left: auto;
+}
+
+.sort select {
+	font: inherit;
+	text-transform: uppercase;
+	color: var(--color-accent);
+	background: #000802;
+	border: 1px solid var(--color-border);
+	padding: 0.15rem 0.4rem;
+}
+
+.empty {
+	padding: 1.2rem 0.5rem;
+	color: var(--color-text-muted);
+}
+
+.levelCategory {
+	display: block;
+	margin-top: 0.15rem;
+	font-size: 0.68rem;
+	font-weight: 400;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: var(--color-text-muted);
+}
+
+.levelSolves {
+	font-size: 0.78rem;
+	color: var(--color-text-muted);
+	font-variant-numeric: tabular-nums;
+	white-space: nowrap;
+}
+
+.pips {
+	font-size: 0.8rem;
+	letter-spacing: 0.12em;
+	white-space: nowrap;
+}
+
+.pips i {
+	font-style: normal;
+	opacity: 0.2;
+}
+
+.d1 {
+	color: var(--color-accent);
+}
+
+.d2 {
+	color: var(--color-warning);
+}
+
+.d3 {
+	color: #ff4d7e;
+}
+
+.chip.d2[aria-pressed="true"] {
+	color: #00140a;
+	background: var(--color-warning);
+	border-color: var(--color-warning);
+	box-shadow: 0 0 8px rgba(255, 204, 0, 0.6);
+}
+
+.chip.d3[aria-pressed="true"] {
+	color: #00140a;
+	background: #ff4d7e;
+	border-color: #ff4d7e;
+	box-shadow: 0 0 8px rgba(255, 77, 126, 0.6);
+}
+
+.chip.d1[aria-pressed="true"] {
+	color: #00140a;
 }

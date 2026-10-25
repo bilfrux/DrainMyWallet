@@ -10,8 +10,10 @@ import { useQueryClient } from "@tanstack/react-query"
 import { useState, useTransition } from "react"
 import { Link, useParams } from "react-router-dom"
 import AccessOverlay, { type CheckOutcome } from "../components/AccessOverlay"
+import GuidedTour from "../components/guide/GuidedTour"
 import SourceView from "../components/SourceView"
 import Terminal from "../components/Terminal"
+import TimedNotice from "../components/TimedNotice"
 import TrustlineStep from "../components/TrustlineStep"
 import Typewriter from "../components/Typewriter"
 import { getLevel, pad } from "../game/levels"
@@ -92,7 +94,7 @@ const LevelPage = () => {
 
 	return (
 		<div className={styles.Level}>
-			<Link to="/" className={styles.back}>
+			<Link to="/play" className={styles.back}>
 				cd ..
 			</Link>
 
@@ -115,7 +117,22 @@ const LevelPage = () => {
 				</p>
 			</header>
 
-			<div className={styles.grid}>
+			{level.timed && <TimedNotice instanceId={instanceId} />}
+
+			{level.guided ? (
+				<GuidedTour
+					instanceId={instanceId}
+					isSolved={isSolved}
+					xp={xp}
+					canPlay={ready && isDeployed}
+					creating={isCreating}
+					checking={isChecking}
+					onCreate={create}
+					onCheck={check}
+				/>
+			) : null}
+
+			<div className={styles.grid} hidden={level.guided}>
 				<Terminal title="instance" className={styles.instance}>
 					{!configured ? (
 						<p className={styles.warn}>
@@ -226,16 +243,18 @@ const LevelPage = () => {
 				</Terminal>
 			</div>
 
-			<Terminal title={`contracts/levels/${level.slug}/src/lib.rs`}>
-				{level.source ? (
-					<SourceView source={level.source} />
-				) : (
-					<p className={styles.muted}>
-						{"// "}contract not written yet. Its source appears here as soon as{" "}
-						<code>contracts/levels/{level.slug}/src/lib.rs</code> exists.
-					</p>
-				)}
-			</Terminal>
+			<div id="source">
+				<Terminal title={`contracts/levels/${level.slug}/src/lib.rs`}>
+					{level.source ? (
+						<SourceView source={level.source} />
+					) : (
+						<p className={styles.muted}>
+							{"// "}contract not written yet. Its source appears here as soon
+							as <code>contracts/levels/{level.slug}/src/lib.rs</code> exists.
+						</p>
+					)}
+				</Terminal>
+			</div>
 
 			{outcome && (
 				<AccessOverlay
