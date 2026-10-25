@@ -74,12 +74,34 @@ const XLM_PATH =
 
 const coinTexture = () => {
 	const size = 256
+	const unit = size / 32
+
+	// The mark alone: a full disc minus the icon (the icon is a disc with the
+	// mark cut out of it), drawn upright (the sprite's vertical axis is flipped in the shader).
+	const mark = document.createElement("canvas")
+	mark.width = mark.height = size
+	const m = mark.getContext("2d")!
+	m.scale(unit, unit)
+	m.fillStyle = "#fff"
+	m.beginPath()
+	m.arc(16, 16, 16, 0, Math.PI * 2)
+	m.fill()
+	m.globalCompositeOperation = "destination-out"
+	m.fill(new Path2D(XLM_PATH))
+
+	// A black coin with a thin green rim and the white mark on it
 	const canvas = document.createElement("canvas")
 	canvas.width = canvas.height = size
 	const ctx = canvas.getContext("2d")!
-	ctx.scale(size / 32, size / 32)
-	ctx.fillStyle = "#fff"
-	ctx.fill(new Path2D(XLM_PATH))
+	ctx.fillStyle = "#02100a"
+	ctx.beginPath()
+	ctx.arc(size / 2, size / 2, size / 2 - 2, 0, Math.PI * 2)
+	ctx.fill()
+	ctx.strokeStyle = "#00c83a"
+	ctx.lineWidth = 7
+	ctx.stroke()
+	ctx.drawImage(mark, size * 0.1, size * 0.1, size * 0.8, size * 0.8)
+
 	const texture = new THREE.CanvasTexture(canvas)
 	texture.colorSpace = THREE.SRGBColorSpace
 	texture.generateMipmaps = true
@@ -192,7 +214,6 @@ export const createLandingScene = (
 	const drainMaterial = new THREE.ShaderMaterial({
 		transparent: true,
 		depthWrite: false,
-		blending: THREE.AdditiveBlending,
 		uniforms,
 		vertexShader: /* glsl */ `
 			attribute vec4 seed;
@@ -204,20 +225,22 @@ export const createLandingScene = (
 			void main() {
 				float t = fract(seed.x + uTime * (0.1 + 0.06 * seed.y));
 				vec3 p;
-				// Spills out of the wallet's lower edge in a fan, then falls
+				// Thrown out from inside the wallet, over its flap, then falling
 				float side = seed.z - 0.5;
-				p.x = side * 3.0 + side * 48.0 * t * (0.5 + 0.5 * seed.y);
-				p.y = -1.9 - 3.0 * t - 12.0 * t * t;
+				p.x = side * (2.0 + 30.0 * t) * (0.55 + 0.45 * seed.y);
+				p.y = 0.3 + 14.0 * t - 22.0 * t * t;
 				p.z = (seed.w - 0.5) * 1.6;
 				vec4 mv = modelViewMatrix * vec4(p, 1.0);
 				gl_Position = projectionMatrix * mv;
-				gl_PointSize = (1.0 + 0.8 * seed.y) * uScale / -mv.z;
-				// Coins in the title's column vanish; the ones spilling to the sides keep falling
+				// Pops up small from inside the wallet and grows as it leaves
+				float grow = smoothstep(0.0, 0.14, t);
+				gl_PointSize = (1.0 + 0.8 * seed.y) * uScale / -mv.z * (0.35 + 0.65 * grow);
+				// Coins falling through the title's column vanish; the ones spilling to the sides keep going
 				float below = smoothstep(-2.1, -3.2, p.y);
 				float centre = 1.0 - smoothstep(5.5, 10.0, abs(p.x));
-				vAlpha = smoothstep(0.0, 0.05, t) * (1.0 - smoothstep(0.6, 0.95, t)) * (1.0 - below * centre);
+				vAlpha = smoothstep(0.0, 0.03, t) * (1.0 - smoothstep(0.62, 0.95, t)) * (1.0 - below * centre);
 				vSpin = uTime * (1.2 + 1.8 * seed.y) + seed.w * 6.2831;
-				vTilt = seed.z * 6.2831;
+				vTilt = (seed.z - 0.5) * 0.7;
 			}
 		`,
 		fragmentShader: /* glsl */ `
@@ -226,15 +249,16 @@ export const createLandingScene = (
 			varying float vSpin;
 			varying float vTilt;
 			void main() {
-				vec2 uv = gl_PointCoord - 0.5;
+				// gl_PointCoord's y axis points down, a canvas texture's points up
+				vec2 uv = vec2(gl_PointCoord.x - 0.5, 0.5 - gl_PointCoord.y);
 				// In-plane tilt, then a flip around the vertical axis
 				float c = cos(vTilt), s = sin(vTilt);
 				uv = vec2(c * uv.x - s * uv.y, s * uv.x + c * uv.y);
 				float flip = max(0.12, abs(cos(vSpin)));
 				uv.x /= flip;
 				if (abs(uv.x) > 0.5 || abs(uv.y) > 0.5) discard;
-				float a = texture2D(uMap, uv + 0.5).a;
-				gl_FragColor = vec4(0.0, 0.85, 0.2, a * vAlpha * (0.5 + 0.2 * flip));
+				vec4 tex = texture2D(uMap, uv + 0.5);
+				gl_FragColor = vec4(tex.rgb, tex.a * vAlpha);
 			}
 		`,
 	})
@@ -376,8 +400,9 @@ export const createLandingScene = (
 		wallet.rotation.y = Math.sin(time * 0.35) * 0.35 + progress * 2.4
 		wallet.rotation.x = Math.sin(time * 0.27) * 0.08 - 0.12
 		wallet.position.y =
-			lerp(4.6, 0, clamp01(progress / 0.19)) + Math.sin(time * 0.8) * 0.12
+			lerp(4.0, 0, clamp01(progress / 0.19)) + Math.sin(time * 0.8) * 0.12
 		// The coins pour out of wherever the wallet currently is
+		wallet.scale.setScalar(lerp(0.88, 1, clamp01(progress / 0.19)))
 		drain.position.y = wallet.position.y
 		drain.visible = progress < 0.22
 		// The wallet fades once we are inside it
