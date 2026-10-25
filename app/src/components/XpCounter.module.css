@@ -1,0 +1,22 @@
+.xp {
+	display: flex;
+	align-items: baseline;
+	gap: 0.5rem;
+	padding: 0.15rem 0.6rem;
+	border: 1px solid var(--color-border);
+}
+
+.label {
+	font-size: 0.7rem;
+	letter-spacing: 0.1em;
+	color: var(--color-text-muted);
+}
+
+.value {
+	font-family: var(--font-display);
+	font-size: 1.5rem;
+	line-height: 1;
+	color: var(--color-accent);
+	text-shadow: var(--glow);
+	font-variant-numeric: tabular-nums;
+}
