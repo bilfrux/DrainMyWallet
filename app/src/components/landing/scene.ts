@@ -380,36 +380,11 @@ export const createLandingScene = (
 	scene.add(door)
 	const doorMaterials = lineMaterials.slice(doorMaterialsFrom)
 
-	// ── Inside the vault: coins drifting in the dark ─────────────────────
-	const treasureCount = opts.lowPower ? 90 : 220
-	const treasure = new Float32Array(treasureCount * 3)
-	for (let i = 0; i < treasureCount; i++) {
-		const a = Math.random() * Math.PI * 2
-		const r = 2.5 + Math.random() * 13
-		treasure[i * 3] = Math.cos(a) * r
-		treasure[i * 3 + 1] = Math.sin(a) * r
-		treasure[i * 3 + 2] = -96 - Math.random() * 44
-	}
-	const treasureGeometry = new THREE.BufferGeometry()
-	treasureGeometry.setAttribute(
-		"position",
-		new THREE.BufferAttribute(treasure, 3),
-	)
-	const treasureMaterial = new THREE.PointsMaterial({
-		map: coin,
-		size: 1.5,
-		transparent: true,
-		opacity: 0,
-		alphaTest: 0.05,
-		depthWrite: false,
-	})
-	const treasurePoints = new THREE.Points(treasureGeometry, treasureMaterial)
-	scene.add(treasurePoints)
-
-	// The finale's showpiece: a dozen big, crisp coins ringed around the text,
-	// each gently swaying so the Stellar mark is always readable.
-	const heroCoins = new THREE.Group()
-	const heroMaterial = new THREE.MeshBasicMaterial({
+	// ── Inside the vault: a field of coins of every size, drifting ───────
+	// Real meshes (not point sprites) so their edges stay sharp, and the
+	// Stellar mark is readable at any size.
+	const fieldCount = opts.lowPower ? 80 : 170
+	const fieldMaterial = new THREE.MeshBasicMaterial({
 		map: coin,
 		transparent: true,
 		opacity: 0,
@@ -417,17 +392,29 @@ export const createLandingScene = (
 		depthWrite: false,
 		toneMapped: false,
 	})
-	const heroGeometry = new THREE.CircleGeometry(1.75, 64)
-	const heroCount = 12
-	for (let i = 0; i < heroCount; i++) {
-		const a = (i / heroCount) * Math.PI * 2 + 0.26
-		const mesh = new THREE.Mesh(heroGeometry, heroMaterial)
-		mesh.position.set(Math.cos(a) * 13, Math.sin(a) * 6.4, VAULT_ROOM - 16)
-		mesh.userData = { phase: i * 0.83, y: mesh.position.y }
-		heroCoins.add(mesh)
-	}
-	heroCoins.visible = false
-	scene.add(heroCoins)
+	const fieldMesh = new THREE.InstancedMesh(
+		new THREE.CircleGeometry(1, 48),
+		fieldMaterial,
+		fieldCount,
+	)
+	fieldMesh.frustumCulled = false
+	fieldMesh.visible = false
+	const field = Array.from({ length: fieldCount }, () => {
+		// Mostly small coins, a few big ones; spread across what the camera sees
+		const radius = 0.3 + Math.pow(Math.random(), 2.4) * 1.5
+		const z = VAULT_ROOM - 12 - Math.random() * 26
+		const reach = (VAULT_ROOM - z) * 0.5
+		return {
+			x: (Math.random() * 2 - 1) * reach * 2.1,
+			y: (Math.random() * 2 - 1) * reach,
+			z,
+			radius,
+			phase: Math.random() * Math.PI * 2,
+			speed: 0.35 + Math.random() * 0.6,
+		}
+	})
+	const placer = new THREE.Object3D()
+	scene.add(fieldMesh)
 
 	// ── Post-processing: bloom makes the lines glow ──────────────────────
 	let composer: EffectComposer | undefined
@@ -501,18 +488,28 @@ export const createLandingScene = (
 		door.scale.setScalar(1 + open * 1.6)
 		const doorAlpha = 1 - smooth(FLASH_AT - 0.01, FLASH_AT + 0.03, progress)
 		doorMaterials.forEach((m) => (m.opacity = doorAlpha))
-		// Background coins stay soft; the crisp ones take over at the end
-		treasureMaterial.opacity =
-			0.6 * smooth(FLASH_AT, DOOR_THROUGH + 0.02, progress)
-		heroCoins.visible = progress > 0.9
-		heroMaterial.opacity = smooth(0.92, 0.965, progress)
-		heroCoins.children.forEach((mesh) => {
-			const { phase, y } = mesh.userData as { phase: number; y: number }
-			mesh.rotation.y = Math.sin(time * 0.8 + phase) * 0.45
-			mesh.rotation.z = Math.sin(time * 0.5 + phase) * 0.08
-			mesh.position.y = y + Math.sin(time * 0.9 + phase) * 0.35
-		})
-		treasurePoints.rotation.z = time * 0.03
+		// The coin field fades in as the camera comes through the door
+		fieldMaterial.opacity = smooth(FLASH_AT, DOOR_THROUGH + 0.03, progress)
+		fieldMesh.visible = progress > FLASH_AT
+		if (fieldMesh.visible) {
+			field.forEach((c, i) => {
+				placer.position.set(
+					c.x + Math.sin(time * c.speed + c.phase) * 0.9,
+					c.y + Math.cos(time * c.speed * 0.8 + c.phase) * 1.1,
+					c.z,
+				)
+				// A gentle sway only: the mark must never turn away or upside down
+				placer.rotation.set(
+					0,
+					Math.sin(time * c.speed + c.phase) * 0.5,
+					Math.sin(time * 0.4 + c.phase) * 0.12,
+				)
+				placer.scale.setScalar(c.radius)
+				placer.updateMatrix()
+				fieldMesh.setMatrixAt(i, placer.matrix)
+			})
+			fieldMesh.instanceMatrix.needsUpdate = true
+		}
 		door.rotation.z = Math.sin(time * 0.15) * 0.05
 		dustPoints.rotation.z = time * 0.02
 
@@ -526,7 +523,9 @@ export const createLandingScene = (
 			bloom.strength = lerp(live, 0.06, settle)
 		}
 
-		if (composer) composer.render()
+		// Once the glow is off, render straight to the screen: the composer's
+		// buffers have no anti-aliasing and the coin edges would be jagged
+		if (composer && progress < 0.95) composer.render()
 		else renderer.render(scene, camera)
 	}
 
@@ -571,9 +570,9 @@ export const createLandingScene = (
 			})
 			lineMaterials.forEach((m) => m.dispose())
 			coin.dispose()
-			treasureMaterial.dispose()
-			heroMaterial.dispose()
-			heroGeometry.dispose()
+			fieldMaterial.dispose()
+			fieldMesh.geometry.dispose()
+			fieldMesh.dispose()
 			drainMaterial.dispose()
 			ringMaterial.dispose()
 			composer?.dispose()
