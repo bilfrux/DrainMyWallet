@@ -186,6 +186,20 @@ const resolveXpToken = () => {
 	return xpTokenId
 }
 
+/** A level whose `balance()` reports the tokens its vault still holds. */
+interface VaultClient {
+	balance: Call<Record<string, never>, bigint>
+}
+
+/** Tokens left in a vault-style instance (levels 1, 2 and 6), in stroops. */
+export const fetchVaultBalance = async (
+	instanceId: string,
+): Promise<bigint> => {
+	const client = await getClient<VaultClient>(instanceId)
+	const tx = await client.balance({})
+	return BigInt(unwrap<bigint>(tx.result))
+}
+
 /** The player's $DRAIN balance. */
 export const fetchXp = async (player: string): Promise<bigint> => {
 	const client = await getClient<XpClient>(await resolveXpToken())

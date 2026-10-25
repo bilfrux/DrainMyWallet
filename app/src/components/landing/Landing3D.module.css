@@ -1,0 +1,430 @@
+/* The section is tall; the stage inside it stays pinned while the page scrolls */
+.section {
+	position: relative;
+	height: 640vh;
+	/* Full-bleed: break out of the 1100px page column */
+	width: 100vw;
+	margin-left: calc(50% - 50vw);
+	margin-top: -2rem;
+}
+
+.stage {
+	position: sticky;
+	top: 0;
+	height: 100vh;
+	overflow: hidden;
+	background: #000802;
+}
+
+/* Soft fade into the page below the pinned stage */
+.stage::after {
+	content: "";
+	position: absolute;
+	inset: auto 0 0 0;
+	height: 90px;
+	background: linear-gradient(to bottom, transparent, #000802);
+	pointer-events: none;
+}
+
+.canvas {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	display: block;
+}
+
+.vignette {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	background:
+		radial-gradient(
+			ellipse at center,
+			transparent 45%,
+			rgba(0, 4, 1, 0.75) 100%
+		),
+		repeating-linear-gradient(
+			to bottom,
+			rgba(0, 0, 0, 0) 0,
+			rgba(0, 0, 0, 0) 2px,
+			rgba(0, 0, 0, 0.12) 3px
+		);
+}
+
+.loading {
+	position: absolute;
+	inset: 0;
+	display: grid;
+	place-items: center;
+	color: var(--color-text-muted);
+	font-size: 0.85rem;
+	letter-spacing: 0.15em;
+	text-transform: uppercase;
+}
+
+/* ── Chapters ─────────────────────────────────────────── */
+
+.chapter {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	align-items: center;
+	padding: 0 clamp(1rem, 7vw, 6rem);
+	will-change: transform, opacity, filter;
+}
+
+.center {
+	justify-content: center;
+	text-align: center;
+}
+
+.bottom {
+	align-items: flex-end;
+	padding-bottom: 13vh;
+}
+
+.left {
+	justify-content: flex-start;
+}
+
+.right {
+	justify-content: flex-end;
+}
+
+.panel {
+	max-width: 36rem;
+}
+
+.left .panel,
+.right .panel {
+	padding: 1.6rem 1.8rem;
+	background: rgba(0, 14, 5, 0.55);
+	border: 1px solid var(--color-border);
+	border-left: 3px solid var(--color-accent);
+	backdrop-filter: blur(8px);
+	box-shadow: var(--shadow);
+}
+
+.center .panel {
+	max-width: 46rem;
+}
+
+/* The last chapter sits on top of the bright vault door: give it a backdrop */
+.center:not(.bottom) .panel {
+	padding: 2.2rem 2.4rem;
+	background: rgba(0, 10, 3, 0.8);
+	border: 1px solid var(--color-border);
+	backdrop-filter: blur(10px);
+	box-shadow: var(--shadow);
+}
+
+.kicker {
+	margin: 0 0 0.9rem;
+	color: var(--color-text-muted);
+	font-size: 0.8rem;
+	letter-spacing: 0.18em;
+	text-transform: uppercase;
+}
+
+.hero {
+	position: relative;
+	margin: 0;
+	font-family: var(--font-display);
+	font-weight: 400;
+	font-size: clamp(2.8rem, 9vw, 6.6rem);
+	line-height: 0.95;
+	letter-spacing: 0.05em;
+	color: var(--color-accent);
+	text-shadow: var(--glow);
+}
+
+.hero::before,
+.hero::after {
+	content: attr(data-text);
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+}
+
+.hero::before {
+	color: #00ffd5;
+	animation: glitch-a 3.1s infinite steps(1);
+}
+
+.hero::after {
+	color: #ff2a6d;
+	animation: glitch-b 3.7s infinite steps(1);
+}
+
+@keyframes glitch-a {
+	0%,
+	88%,
+	100% {
+		clip-path: inset(100% 0 0 0);
+		transform: none;
+	}
+	90% {
+		clip-path: inset(15% 0 60% 0);
+		transform: translate(-5px, -2px);
+	}
+	94% {
+		clip-path: inset(55% 0 20% 0);
+		transform: translate(4px, 1px);
+	}
+}
+
+@keyframes glitch-b {
+	0%,
+	82%,
+	100% {
+		clip-path: inset(100% 0 0 0);
+		transform: none;
+	}
+	84% {
+		clip-path: inset(70% 0 5% 0);
+		transform: translate(5px, 2px);
+	}
+	92% {
+		clip-path: inset(5% 0 75% 0);
+		transform: translate(-4px, -1px);
+	}
+}
+
+.title {
+	margin: 0 0 0.8rem;
+	font-family: var(--font-display);
+	font-weight: 400;
+	font-size: clamp(2.2rem, 5.4vw, 3.8rem);
+	line-height: 1.02;
+	color: var(--color-accent);
+	text-shadow: var(--glow);
+}
+
+.body {
+	margin: 0;
+	color: var(--color-text);
+	font-size: clamp(0.95rem, 1.5vw, 1.12rem);
+	line-height: 1.6;
+}
+
+.center .body {
+	margin: 1.4rem auto 0;
+	max-width: 38rem;
+}
+
+.snippet {
+	margin: 1.2rem 0 0;
+	padding: 0.9rem 1rem;
+	background: rgba(0, 0, 0, 0.55);
+	border: 1px solid var(--color-border);
+	color: var(--color-text);
+	font-size: 0.82rem;
+	line-height: 1.55;
+	white-space: pre-wrap;
+	overflow-x: auto;
+}
+
+.ok {
+	color: var(--color-success);
+}
+
+.actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 1rem;
+	align-items: center;
+	justify-content: center;
+	margin-top: 2rem;
+}
+
+.cta {
+	display: inline-block;
+	padding: 0.95rem 1.8rem;
+	background: var(--color-accent);
+	color: #00140a;
+	font-weight: 700;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	text-decoration: none;
+	box-shadow: var(--glow);
+	animation: pulse 2.2s ease-in-out infinite;
+	transition: transform 0.15s;
+}
+
+.cta:hover {
+	transform: translateY(-2px) scale(1.03);
+}
+
+@keyframes pulse {
+	50% {
+		box-shadow:
+			0 0 14px rgba(0, 255, 65, 0.9),
+			0 0 44px rgba(0, 255, 65, 0.5);
+	}
+}
+
+.ghost {
+	background: rgba(0, 0, 0, 0.5);
+	border: 1px solid var(--color-border);
+	color: var(--color-text-muted);
+	padding: 0.85rem 1.2rem;
+}
+
+.ghost:hover {
+	color: var(--color-accent);
+	border-color: var(--color-accent);
+}
+
+/* ── Chrome: scroll hint, chapter dots, skip ──────────── */
+
+.scrollHint {
+	position: absolute;
+	left: 50%;
+	bottom: 2.2rem;
+	transform: translateX(-50%);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.6rem;
+	color: var(--color-text-muted);
+	font-size: 0.72rem;
+	letter-spacing: 0.3em;
+	text-transform: uppercase;
+	pointer-events: none;
+}
+
+.scrollHint i {
+	width: 1px;
+	height: 44px;
+	background: linear-gradient(to bottom, var(--color-accent), transparent);
+	animation: drip 1.6s ease-in infinite;
+	transform-origin: top;
+}
+
+@keyframes drip {
+	0% {
+		transform: scaleY(0);
+		opacity: 1;
+	}
+	70% {
+		transform: scaleY(1);
+		opacity: 1;
+	}
+	100% {
+		transform: scaleY(1);
+		opacity: 0;
+	}
+}
+
+.dots {
+	position: absolute;
+	right: clamp(0.6rem, 2vw, 1.6rem);
+	top: 50%;
+	transform: translateY(-50%);
+	display: flex;
+	flex-direction: column;
+	gap: 1.1rem;
+	z-index: 2;
+}
+
+.track {
+	position: absolute;
+	left: 50%;
+	top: 6px;
+	bottom: 6px;
+	width: 1px;
+	background: var(--color-border);
+	transform: translateX(-50%);
+}
+
+.bar {
+	width: 100%;
+	height: 100%;
+	background: var(--color-accent);
+	box-shadow: var(--glow);
+	transform-origin: top;
+	transform: scaleY(0);
+}
+
+.dots button {
+	position: relative;
+	width: 12px;
+	height: 12px;
+	padding: 0;
+	border-radius: 50%;
+	border: 1px solid var(--color-accent);
+	background: #000802;
+	transition:
+		transform 0.2s,
+		background 0.2s;
+}
+
+.dots button[data-on="1"] {
+	background: var(--color-accent);
+	box-shadow: var(--glow);
+	transform: scale(1.35);
+}
+
+.skip {
+	position: absolute;
+	left: clamp(1rem, 3vw, 2rem);
+	bottom: 1.6rem;
+	background: none;
+	border: none;
+	padding: 0.3rem 0;
+	color: var(--color-text-muted);
+	font-size: 0.78rem;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	z-index: 2;
+}
+
+.skip:hover {
+	color: var(--color-accent);
+}
+
+/* ── Fallback: reduced motion or no WebGL ─────────────── */
+
+.fallback {
+	display: grid;
+	gap: 1.4rem;
+	padding: 1rem 0 0;
+}
+
+.card {
+	padding: 1.6rem 1.8rem;
+	background: rgba(0, 14, 5, 0.6);
+	border: 1px solid var(--color-border);
+	border-left: 3px solid var(--color-accent);
+}
+
+@media (max-width: 720px) {
+	.section {
+		height: 560vh;
+	}
+
+	.chapter {
+		align-items: flex-end;
+		padding-bottom: 5.5rem;
+	}
+
+	.left .panel,
+	.right .panel {
+		padding: 1.1rem 1.2rem;
+		max-width: none;
+	}
+
+	.dots {
+		right: 0.4rem;
+		gap: 0.8rem;
+	}
+
+	.scrollHint {
+		bottom: 1.4rem;
+	}
+
+	.skip {
+		display: none;
+	}
+}
