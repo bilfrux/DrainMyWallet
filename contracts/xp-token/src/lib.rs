@@ -10,12 +10,6 @@ enum DataKey {
     Balance(Address),
 }
 
-/// Balances are bumped to roughly 30 days whenever they drop below ~15 days,
-/// so a player's score does not get archived between two sessions.
-const DAY_IN_LEDGERS: u32 = 17_280;
-const BALANCE_BUMP: u32 = 30 * DAY_IN_LEDGERS;
-const BALANCE_THRESHOLD: u32 = BALANCE_BUMP - 15 * DAY_IN_LEDGERS;
-
 #[contractevent(data_format = "single-value")]
 pub struct Mint {
     #[topic]
@@ -42,13 +36,10 @@ impl XpToken {
         let key = DataKey::Balance(to.clone());
         let balance = Self::balance(env, to.clone());
         let new_balance = balance.checked_add(amount).expect("balance overflow");
+        // No TTL extension here: the factory's player pays this call's rent.
+        // Balances keep the network's minimum persistent TTL; extend them with
+        // `stellar contract extend` if the game outlives it.
         env.storage().persistent().set(&key, &new_balance);
-        env.storage()
-            .persistent()
-            .extend_ttl(&key, BALANCE_THRESHOLD, BALANCE_BUMP);
-        env.storage()
-            .instance()
-            .extend_ttl(BALANCE_THRESHOLD, BALANCE_BUMP);
         Mint { to, amount }.publish(env);
     }
 

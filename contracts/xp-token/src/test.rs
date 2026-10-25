@@ -13,7 +13,13 @@ fn setup(env: &Env) -> (Address, XpTokenClient<'_>) {
     (factory, XpTokenClient::new(env, &id))
 }
 
-fn mock_mint_by<'a>(env: &Env, client: &XpTokenClient<'a>, signer: &Address, to: &Address, amount: i128) {
+fn mock_mint_by<'a>(
+    env: &Env,
+    client: &XpTokenClient<'a>,
+    signer: &Address,
+    to: &Address,
+    amount: i128,
+) {
     env.mock_auths(&[MockAuth {
         address: signer,
         invoke: &MockAuthInvoke {
