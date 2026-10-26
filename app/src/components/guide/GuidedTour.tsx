@@ -70,6 +70,30 @@ const GLOSSARY = [
 	},
 ]
 
+/** What each function of level 1 does, as feedback when the player picks it. */
+const QUIZ: { fn: string; right: boolean; why: string }[] = [
+	{
+		fn: "deposit",
+		right: false,
+		why: "deposit already starts with from.require_auth(): it does check who is calling.",
+	},
+	{
+		fn: "withdraw",
+		right: true,
+		why: "",
+	},
+	{
+		fn: "balance",
+		right: false,
+		why: "balance only reads the vault. Reading is harmless: nothing moves.",
+	},
+	{
+		fn: "is_solved",
+		right: false,
+		why: "is_solved only reads the state to answer yes or no. Nothing moves here either.",
+	},
+]
+
 const GuidedTour = ({
 	instanceId,
 	isSolved,
@@ -86,7 +110,10 @@ const GuidedTour = ({
 	const [revealed, setRevealed] = useFlag("l1-bug")
 	const [toolsReady, setToolsReady] = useFlag("l1-tools")
 	const [trustReady, setTrustReady] = useFlag("l1-trust")
+	const [cmdShown, setCmdShown] = useFlag("l1-cmd")
 	const [open, setOpen] = useState<string>()
+	const [picked, setPicked] = useState<string>()
+	const [wrong, setWrong] = useState(0)
 
 	const vaultTokens =
 		vault.data === undefined ? undefined : Number(vault.data / STROOPS)
@@ -162,25 +189,23 @@ const GuidedTour = ({
 			id: "read",
 			title: "Read the contract and find the bug",
 			done: revealed,
-			summary: "One function is missing a check. Which one?",
+			summary: "One function forgot a check. Which one?",
 			body: (
 				<>
 					<p>
-						Below the guide is the vault&apos;s full source. Two functions
-						matter. Compare them: one of them forgot something important.
+						Below the guide is the vault&apos;s full source. Read it, then
+						answer:{" "}
+						<strong>which function forgot to check who is calling?</strong>
 					</p>
-					<div className={styles.compare}>
-						<div>
-							<p className={styles.fn}>deposit(from, amount)</p>
-							<p>puts tokens into the vault</p>
-						</div>
-						<div>
-							<p className={styles.fn}>withdraw(to, amount)</p>
-							<p>takes tokens out of the vault</p>
-						</div>
-					</div>
+					<p className={styles.tip}>
+						In Soroban, a function that acts for someone has to ask for proof
+						that it is really them. Look for that proof in each function.
+					</p>
 					{revealed ? (
 						<p className={styles.answer}>
+							{picked === "withdraw" && (
+								<strong>✓ That&apos;s the one. </strong>
+							)}
 							<code>deposit</code> starts with <code>from.require_auth()</code>:
 							&ldquo;prove you are <code>from</code>&rdquo;.{" "}
 							<code>withdraw</code> has <strong>no such line</strong>, so anyone
@@ -189,10 +214,50 @@ const GuidedTour = ({
 						</p>
 					) : (
 						<>
-							<p className={styles.tip}>
-								Hint: which of the two checks <em>who is calling</em>?
+							<div
+								className={styles.quiz}
+								role="group"
+								aria-label="Pick a function"
+							>
+								{QUIZ.map((q) => (
+									<button
+										key={q.fn}
+										className={styles.option}
+										aria-pressed={picked === q.fn}
+										onClick={() => {
+											setPicked(q.fn)
+											if (q.right) {
+												setRevealed(true)
+												setOpen("read")
+											} else setWrong((n) => n + 1)
+										}}
+									>
+										{q.fn}
+									</button>
+								))}
+							</div>
+							{picked && (
+								<p className={styles.feedback} aria-live="polite">
+									✗ {QUIZ.find((q) => q.fn === picked)?.why}
+								</p>
+							)}
+							{wrong >= 2 && (
+								<p className={styles.tip}>
+									Hint: which function moves tokens <em>out</em> of the vault,
+									and what does it ask of the caller?
+								</p>
+							)}
+							<p>
+								<button
+									className={styles.link}
+									onClick={() => {
+										setRevealed(true)
+										setOpen("read")
+									}}
+								>
+									I give up, tell me
+								</button>
 							</p>
-							<button onClick={() => setRevealed(true)}>Show me the bug</button>
 						</>
 					)}
 					<p>
@@ -263,23 +328,46 @@ const GuidedTour = ({
 			id: "attack",
 			title: "Empty the vault",
 			done: vaultEmpty,
-			summary: "Call withdraw. Nobody will ask who you are.",
+			summary: "Call the function you found, from your attacker key.",
 			body: (
 				<>
 					<p>
-						Call <code>withdraw</code> and send the whole vault (1,000 tokens ={" "}
-						<code>{FULL_AMOUNT}</code> in the smallest unit) to your attacker
-						key:
+						Now use the bug. Call the function you found from your{" "}
+						<code>attacker</code> key, and send the vault&apos;s tokens to your
+						attacker address.
 					</p>
+					<p className={styles.tip}>
+						Amounts are in the smallest unit: 1 token = 10,000,000. The vault
+						holds 1,000 tokens.
+					</p>
+					<p>Ask the contract what a function expects:</p>
 					<CopyBlock
 						text={`stellar contract invoke \\
+  --id ${instance} \\
+  --source-account attacker \\
+  --network testnet \\
+  -- <function> --help`}
+					/>
+					{cmdShown ? (
+						<>
+							<p>Here is the whole command, if you are stuck:</p>
+							<CopyBlock
+								text={`stellar contract invoke \\
   --id ${instance} \\
   --source-account attacker \\
   --network testnet \\
   -- withdraw \\
   --to $(stellar keys address attacker) \\
   --amount ${FULL_AMOUNT}`}
-					/>
+							/>
+						</>
+					) : (
+						<p>
+							<button className={styles.link} onClick={() => setCmdShown(true)}>
+								Show me the whole command
+							</button>
+						</p>
+					)}
 					<div className={styles.gauge} aria-live="polite">
 						<div className={styles.gaugeLabel}>
 							<span>vault</span>

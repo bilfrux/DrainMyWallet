@@ -30,7 +30,7 @@ Every level has exactly one intended vulnerability. Finding it is the game, so i
 
 Each level ships with an exploit as a `cargo test` in its own `test` module, so no level can turn out impossible. Write-ups of every exploit (spoilers) live on the [`solutions`](../../tree/solutions) branch, away from `main`.
 
-Level 1 is guided: the page walks you through it in eight steps and notices on its own what you have already done. Level 6 is the hardest: the exploit is a small contract you write and deploy yourself.
+Level 1 is guided: the page walks you through it in eight steps and notices on its own what you have already done, but you still have to find the bug yourself (a question with graded help, and the attack command stays hidden until you ask for it). Level 6 is the hardest: the exploit is a small contract you write and deploy yourself.
 
 Level 5 depends on time: a temporary storage entry lasts at least 720 ledgers on testnet, about an hour. Create your instance first and come back to it.
 
