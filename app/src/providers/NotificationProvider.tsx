@@ -25,6 +25,10 @@ interface NotificationContextType {
 	addNotification: (message: string, type: NotificationType) => void
 }
 
+// Two notifications of the same type can land in the same millisecond, so
+// ids come from a counter rather than the clock
+let nextId = 0
+
 const NotificationContext = createContext<NotificationContextType | undefined>(
 	undefined,
 )
@@ -37,7 +41,7 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({
 	const addNotification = useCallback(
 		(message: string, type: NotificationType) => {
 			const newNotification = {
-				id: `${type}-${Date.now().toString()}`,
+				id: `${type}-${nextId++}`,
 				message,
 				type,
 				isVisible: true,

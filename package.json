@@ -8,7 +8,8 @@
     "start": "npm start --workspace app",
     "lint": "npm run lint --workspaces --if-present",
     "format": "prettier . --write",
-    "format:check": "prettier . --check"
+    "format:check": "prettier . --check",
+    "prepare": "husky"
   },
   "workspaces": [
     "app",
@@ -16,7 +17,13 @@
     "app-lib/clients/*"
   ],
   "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
     "prettier": "^3.8.3"
   },
-  "prettier": "@theahaco/ts-config/prettier"
+  "prettier": "@theahaco/ts-config/prettier",
+  "lint-staged": {
+    "app/**/*.{js,mjs,ts,tsx}": "eslint --fix --no-warn-ignored",
+    "*": "prettier --write --ignore-unknown"
+  }
 }

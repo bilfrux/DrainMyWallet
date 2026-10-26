@@ -43,6 +43,11 @@ export interface Level {
 	 * trustline first or the transfer fails with `Error(Contract, #13)`.
 	 */
 	needsTrustline?: boolean
+	/**
+	 * The exploit must be signed by the wallet's own account (the instance's
+	 * player), so the player needs that account's key in the Stellar CLI.
+	 */
+	walletSigns?: boolean
 	/** Contract source, read at build time from the repo */
 	source?: string
 }
@@ -87,6 +92,7 @@ const LEVELS: Omit<Level, "source">[] = [
 		hint: "One-time setup is only one-time if the code says so. What happens if you call initialize yourself?",
 		xp: 200,
 		needsTrustline: true,
+		walletSigns: true,
 	},
 	{
 		id: 3,
@@ -107,10 +113,11 @@ const LEVELS: Omit<Level, "source">[] = [
 		difficulty: 2,
 		name: "Fatal Cast",
 		story:
-			"Rewards are capped at 100. The developer double-checked the comparison. The comparison is fine. The type is not.",
+			"Rewards are capped at 100. The developer double-checked the comparison, and the comparison is fine.",
 		goal: "Credit yourself more than 1,000,000.",
 		hint: "`as u32` never panics: it keeps the low 32 bits and drops the rest. Which i128 looks small once truncated?",
 		xp: 400,
+		walletSigns: true,
 	},
 	{
 		id: 5,
@@ -125,6 +132,7 @@ const LEVELS: Omit<Level, "source">[] = [
 		xp: 500,
 		bonus: true,
 		timed: true,
+		walletSigns: true,
 	},
 	{
 		id: 6,
@@ -150,6 +158,7 @@ const LEVELS: Omit<Level, "source">[] = [
 		goal: "Take the treasury's points for yourself.",
 		hint: "What does send do with an amount below zero? Follow the two balances: who ends up with more, and who signed for it?",
 		xp: 150,
+		walletSigns: true,
 	},
 	{
 		id: 8,
@@ -170,11 +179,12 @@ const LEVELS: Omit<Level, "source">[] = [
 		difficulty: 2,
 		name: "Time Warp",
 		story:
-			"A savings vault locked for two months. The author counted the lock in ledgers, and checked it against the clock.",
+			"A savings vault locked for two months. The author tested the lock carefully, on a brand new local network.",
 		goal: "Empty the vault, without waiting.",
 		hint: "Compare the two sides of the lock check. One is a ledger number, the other is a timestamp. What unit is each in, and how big is it?",
 		xp: 350,
 		needsTrustline: true,
+		walletSigns: true,
 	},
 ]
 

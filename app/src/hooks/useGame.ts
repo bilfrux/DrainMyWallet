@@ -151,7 +151,7 @@ export const useSolveCounts = () => {
 	const { ready } = useGameStatus()
 	return useQuery({
 		queryKey: ["solve-counts"],
-		queryFn: fetchSolveCounts,
+		queryFn: () => fetchSolveCounts(levels.map((l) => l.id)),
 		enabled: ready,
 		staleTime: 60_000,
 	})
