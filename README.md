@@ -121,6 +121,24 @@ Stellar **testnet**. Also in [`deployments/testnet.env`](deployments/testnet.env
 
 `scripts/smoke-test.sh` plays the levels end to end on these contracts with a fresh account: create an instance, run the exploit, submit, check that the XP was minted. It passed on levels 1 to 4 and 6 to 9. The account `GAE3GMZYJXZJ2CYL3ZMHXOJOH7CKPFLVPQ42YTON6P6UGCBZ5IZ4EHER` holds the resulting 2,450 `$DRAIN` and can be looked up on [Stellar Expert](https://stellar.expert/explorer/testnet/account/GAE3GMZYJXZJ2CYL3ZMHXOJOH7CKPFLVPQ42YTON6P6UGCBZ5IZ4EHER). Level 5 waits about an hour for the ban to expire, so it runs on its own (`WITH_SLOW=1 ONLY=5`).
 
+#### On-chain evidence
+
+The `submit` transaction that validated each level on the final factory (the factory emitted a `level_solved` event in each, and minted the level's XP):
+
+| Level | Player | Transaction |
+|-------|--------|-------------|
+| 1 | `GAE3GMZY…` | [`caa50b0f1f…`](https://stellar.expert/explorer/testnet/tx/caa50b0f1fb8702b3f67a5fd7d12d56048d4d14230d5da5998415e22e54edd0f) |
+| 2 | `GAE3GMZY…` | [`5bf8ea6142…`](https://stellar.expert/explorer/testnet/tx/5bf8ea6142813007abcff70dc88b9afacd5e447ab3c93a90b4a4f948e614d615) |
+| 3 | `GAE3GMZY…` | [`81c0086fa7…`](https://stellar.expert/explorer/testnet/tx/81c0086fa76c7e4b918c3d43964be6820155c87b573272fca0d3f6a5a3ce9c3e) |
+| 4 | `GAE3GMZY…` | [`8de12925d2…`](https://stellar.expert/explorer/testnet/tx/8de12925d2fae78099ce2820797dbef3039d64d6040b2c94c89e37d4fff72a93) |
+| 5 | `GDOR3RLC…` | [`1fd4d3ee9b…`](https://stellar.expert/explorer/testnet/tx/1fd4d3ee9b192e7f581929804fd886555c386fff48b70b2825acab3c1f09a132) |
+| 6 | `GAE3GMZY…` | [`582a9a47c9…`](https://stellar.expert/explorer/testnet/tx/582a9a47c9b20fababd43bf347ed9f20d3fb5500c1ee430d6d48ab037a1f625a) |
+| 7 | `GAE3GMZY…` | [`9844e25c73…`](https://stellar.expert/explorer/testnet/tx/9844e25c73ca20f69dd53f522edef48a2fd8ceffdd33fb96f0f567fc81a3980c) |
+| 8 | `GAE3GMZY…` | [`85776e033b…`](https://stellar.expert/explorer/testnet/tx/85776e033bc3b8ce882722629a90f3a09d1fb2c0ce3afe535930214988608eff) |
+| 9 | `GAE3GMZY…` | [`39ec311bec…`](https://stellar.expert/explorer/testnet/tx/39ec311beca0b104e3c8f15f52bc1ccc28bea65270a7c07b0433d2a4f4291c0a) |
+
+Level 5's player solved it after the ban had expired, which takes about an hour.
+
 ### Trust and safety
 
 A site called "drain my wallet" that asks for a wallet connection looks like a phishing drainer, so the UI defuses that on purpose:
@@ -189,8 +207,9 @@ contracts/
 ├── xp-token/       $DRAIN, non-transferable
 ├── levels/         01-open-door … 09-time-warp
 └── test-level/     fixture used only by the factory tests
+attackers/          the counterfeit token contract that level 6's exploit deploys (used by the smoke test)
 app/, app-lib/      frontend and wallet helpers (Scaffold Stellar)
-scripts/            deploy.sh (game contracts), extend.sh (storage TTLs), build-vercel.sh (site)
+scripts/            deploy.sh (game contracts), extend.sh (storage TTLs), smoke-test.sh (plays the levels end to end), build-vercel.sh (site)
 deployments/        contract ids per network
 ```
 
