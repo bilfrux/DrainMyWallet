@@ -20,6 +20,7 @@ struct Game<'a> {
     admin: Address,
     factory: FactoryClient<'a>,
     token: TokenClient<'a>,
+    sac: StellarAssetClient<'a>,
     xp: XpClient<'a>,
 }
 
@@ -34,12 +35,13 @@ fn setup<'a>() -> Game<'a> {
     let xp_id = env.register(XpToken, (&factory_id,));
     factory.set_xp_token(&xp_id);
 
-    StellarAssetClient::new(&env, &asset.address()).mint(&factory_id, &(10 * FUNDING));
+    StellarAssetClient::new(&env, &asset.address()).set_admin(&factory_id);
     let wasm_hash = env.deployer().upload_contract_wasm(test_level::WASM);
     factory.register_level(&1, &wasm_hash, &FUNDING, &XP);
 
     Game {
         token: TokenClient::new(&env, &asset.address()),
+        sac: StellarAssetClient::new(&env, &asset.address()),
         xp: XpClient::new(&env, &xp_id),
         env,
         admin,
@@ -56,7 +58,7 @@ fn new_instance_deploys_and_funds() {
 
     assert_eq!(g.factory.instance_of(&player, &1), Some(instance.clone()));
     assert_eq!(g.token.balance(&instance), FUNDING);
-    assert_eq!(g.token.balance(&g.factory.address), 9 * FUNDING);
+    assert_eq!(g.token.balance(&g.factory.address), 0);
     let level = test_level::Client::new(&g.env, &instance);
     assert_eq!(level.funds(), FUNDING);
     assert!(!level.is_solved(&player));
@@ -212,4 +214,87 @@ fn xp_token_cannot_be_set_by_non_admin() {
     let factory = FactoryClient::new(&env, &env.register(Factory, (&admin, &token)));
     let xp = Address::generate(&env);
     assert!(factory.try_set_xp_token(&xp).is_err());
+}
+
+#[test]
+fn funding_never_runs_out() {
+    let g = setup();
+    let player = Address::generate(&g.env);
+    for _ in 0..20 {
+        let instance = g.factory.new_instance(&player, &1);
+        assert_eq!(g.token.balance(&instance), FUNDING);
+    }
+}
+
+#[test]
+fn admin_hands_the_token_over() {
+    let g = setup();
+    let next = Address::generate(&g.env);
+
+    g.factory.set_token_admin(&next);
+    assert_eq!(g.sac.admin(), next);
+    // Without the admin role the factory can no longer fund instances
+    let player = Address::generate(&g.env);
+    assert!(g.factory.try_new_instance(&player, &1).is_err());
+}
+
+#[test]
+fn only_admin_hands_the_token_over() {
+    let g = setup();
+    let next = Address::generate(&g.env);
+
+    g.env.set_auths(&[]);
+    assert!(g.factory.try_set_token_admin(&next).is_err());
+    assert_eq!(g.sac.admin(), g.factory.address);
+}
+
+#[test]
+fn players_and_solves_are_recorded_once() {
+    let g = setup();
+    let hash = g.factory.level(&1).unwrap().wasm_hash;
+    g.factory.register_level(&2, &hash, &0, &XP);
+    let alice = Address::generate(&g.env);
+    let bob = Address::generate(&g.env);
+
+    for (player, level) in [(&alice, 1), (&alice, 2), (&bob, 1)] {
+        let instance = g.factory.new_instance(player, &level);
+        test_level::Client::new(&g.env, &instance).win();
+        assert!(g.factory.submit(player, &level));
+        assert!(g.factory.submit(player, &level));
+    }
+
+    assert_eq!(g.factory.player_count(), 2);
+    assert_eq!(
+        g.factory.players(&0, &10),
+        vec![&g.env, alice.clone(), bob.clone()]
+    );
+    assert_eq!(g.factory.players(&1, &10), vec![&g.env, bob]);
+    assert_eq!(g.factory.players(&5, &10), Vec::<Address>::new(&g.env));
+    assert_eq!(g.factory.solves(&1), 2);
+    assert_eq!(g.factory.solves(&2), 1);
+    assert_eq!(g.factory.solves(&3), 0);
+}
+
+#[test]
+fn unsolved_submit_records_no_player() {
+    let g = setup();
+    let player = Address::generate(&g.env);
+    g.factory.new_instance(&player, &1);
+    assert!(!g.factory.submit(&player, &1));
+    assert_eq!(g.factory.player_count(), 0);
+    assert_eq!(g.factory.solves(&1), 0);
+}
+
+#[test]
+fn players_pages_are_capped() {
+    let g = setup();
+    for _ in 0..(MAX_PAGE + 3) {
+        let player = Address::generate(&g.env);
+        let instance = g.factory.new_instance(&player, &1);
+        test_level::Client::new(&g.env, &instance).win();
+        g.factory.submit(&player, &1);
+    }
+    assert_eq!(g.factory.player_count(), MAX_PAGE + 3);
+    assert_eq!(g.factory.players(&0, &u32::MAX).len(), MAX_PAGE);
+    assert_eq!(g.factory.players(&MAX_PAGE, &MAX_PAGE).len(), 3);
 }
