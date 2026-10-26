@@ -9,6 +9,8 @@ A security wargame for Soroban. Each level is a deliberately vulnerable contract
 - **Network:** Stellar **testnet only**. Never mainnet, never real funds.
 - **Submission format:** demo video + public repo. Winners present on stage at Meridian.
 
+This started as the plan written before the event. Sections 2 to 6 are kept in sync with the code; sections 7 to 11 record the original plan and checklists.
+
 ---
 
 ## 1. Why Soroban
@@ -31,14 +33,21 @@ drainmywallet/
 ├── contracts/
 │   ├── factory/
 │   ├── xp-token/                   # $DRAIN, non-transferable XP
+│   ├── test-level/                 # fixture for the factory tests
 │   └── levels/
 │       ├── 01-open-door/
 │       ├── 02-crown/
 │       ├── 03-wrong-signer/
 │       ├── 04-fatal-cast/
-│       └── 05-forgetful-list/      # bonus, only if time allows
-├── scripts/                        # deploy, register levels, fallback manual instancing
-└── frontend/
+│       ├── 05-forgetful-list/      # bonus
+│       ├── 06-counterfeit/
+│       ├── 07-negative-space/
+│       ├── 08-name-clash/
+│       └── 09-time-warp/
+├── scripts/                        # deploy.sh, extend.sh, build-vercel.sh
+├── deployments/                    # contract ids per network
+├── app/                            # React frontend (Scaffold Stellar)
+└── app-lib/                        # chain and wallet helpers, generated clients
 ```
 
 Solutions (exploit write-ups and scripts) live on a separate `solutions` branch so `main` doesn't spoil the game. Exploit **tests** stay on `main` but in a clearly named test module.
@@ -58,6 +67,10 @@ The game token is a classic Stellar asset issued by the game admin and used thro
 | 3 | Wrong Signer | `withdraw_for(caller, account, amount)` authenticates `caller` but debits `account` without checking they match | Move the victim's balance to yourself | Victim's internal balance is 0 |
 | 4 | Fatal Cast | `claim_reward(player, amount: i128)` checks `(amount as u32) <= MAX_REWARD` but credits the full `i128` | Credit yourself an absurd balance | Player's internal balance > 1,000,000 |
 | 5 | Forgetful List *(bonus)* | Ban list stored in **temporary** storage, which expires | Act while banned | A banned address performed the protected action |
+| 6 | Counterfeit | `deposit(token, from, amount)` credits whatever token the caller names | Empty the vault | Vault game-token balance is 0 |
+| 7 | Negative Space | `send(from, to, amount)` accepts a negative amount | Take the treasury's points | Player's internal balance >= 1,000 |
+| 8 | Name Clash | `add_delegate(name, who)` writes under a caller-chosen key that can equal the admin's | Become admin | Stored admin == player |
+| 9 | Time Warp | The lock is counted in ledgers but compared with the timestamp | Empty the locked vault | Vault token balance is 0 |
 
 ### Level details
 
@@ -69,7 +82,15 @@ The game token is a classic Stellar asset issued by the game admin and used thro
 
 **04 — Fatal Cast.** `claim_reward(player, amount: i128)` is meant to cap rewards at `MAX_REWARD = 100`. The check casts to `u32` (which silently truncates), but the credit uses the original `i128`. Passing `2^32 + 1` passes the check and credits 4,294,967,297. Intended lesson: `as` casts in Rust truncate silently, regardless of the `overflow-checks` profile setting.
 
-**05 — Forgetful List (bonus).** `ban(addr)` stores the ban in temporary storage with a short TTL. The protected action checks the ban list. Once the entry expires, the banned address passes. Intended lesson: security state must live in persistent storage with managed TTL. **Only build this if** the minimum TTL for temporary entries on testnet lets the expiry happen within a demo-friendly time — check the network config first.
+**05 — Forgetful List (bonus).** The constructor bans the player in temporary storage, with the network's minimum TTL (720 ledgers, about an hour on testnet). The protected action checks the ban list. Once the entry expires, the banned address passes. Intended lesson: security state must live in persistent storage with managed TTL.
+
+**06 — Counterfeit.** A vault keeps an IOU ledger: `deposit(token, from, amount)` transfers `amount` of `token` and credits it, `withdraw(to, amount)` pays credit out in the game token. The vault never checks that `token` is the game token, so a contract the player writes can fake the deposit. Intended lesson: never trust a contract address supplied by the caller.
+
+**07 — Negative Space.** `send(from, to, amount)` checks `from_balance >= amount` but never that `amount` is positive. Sending a negative amount to the treasury pulls its points to the sender. Intended lesson: validate the sign of every signed amount.
+
+**08 — Name Clash.** The admin is stored under the bare symbol `admin`, and `add_delegate(caller, name, who)` stores `who` under the symbol `name` in the same storage. Registering a delegate called `admin` overwrites it. Intended lesson: keep user-chosen keys in their own namespace (a `#[contracttype]` enum).
+
+**09 — Time Warp.** `unlock_at` is a ledger sequence (current sequence plus 1,000,000), but `withdraw` compares it with `env.ledger().timestamp()`, which is far larger. The vault opens immediately. Intended lesson: keep units straight, ledgers are not seconds.
 
 Each level ships with a one or two sentence story shown above the code on the site.
 
@@ -77,7 +98,7 @@ Each level ships with a one or two sentence story shown above the code on the si
 
 Two separate things, on purpose.
 
-- **Loot** — the game tokens a player drains (levels 1 and 3) stay in their wallet as a visible trophy. They are transferable and **do not count** toward the score.
+- **Loot** — the game tokens a player drains (levels 1, 2, 6 and 9) stay in their wallet as a visible trophy. They are transferable and **do not count** toward the score.
 - **XP (`$DRAIN`)** — minted by the factory when `submit` validates a level. Fixed reward per level, set by difficulty. **Non-transferable.** The leaderboard reads XP balances.
 
 | Level | XP reward |
@@ -87,6 +108,10 @@ Two separate things, on purpose.
 | 03 Wrong Signer | 300 |
 | 04 Fatal Cast | 400 |
 | 05 Forgetful List | 500 |
+| 06 Counterfeit | 600 |
+| 07 Negative Space | 150 |
+| 08 Name Clash | 350 |
+| 09 Time Warp | 350 |
 
 Why XP is not simply "what you drained":
 1. Not every level drains tokens (level 2 makes you admin, level 4 inflates an internal balance, level 5 bypasses a ban).
@@ -99,17 +124,22 @@ Why XP is not simply "what you drained":
 
 ### Common interface (every level)
 
-- `setup(player)` — prepares the instance for this player (funds the vault, creates the victim balance, sets the original admin). Callable **once**, **only by the factory**. This guard must itself be correct — otherwise level 2's bug leaks into every level. Use a constructor instead if the current SDK version supports passing constructor args at deploy time.
+- `__constructor(player, token)` — runs once, at deploy time, with the arguments the factory passes: records the player and the game token, and sets up the level's starting state (victim balance, original admin, ban, lock). A constructor cannot be called again, so no level needs a `setup` guard.
 - `is_solved(player) -> bool` — read-only check of the win condition.
 - Level-specific functions (including the vulnerable one).
 
 ### Factory
 
-- `register_level(level_id: u32, wasm_hash: BytesN<32>)` — game admin only.
-- `new_instance(player, level_id) -> Address` — `player.require_auth()`, deploys a fresh instance via `env.deployer()` with a salt derived from `(player, level_id, nonce)`, calls `setup`, stores the mapping, returns the address.
+- `__constructor(admin, token)` — `token` is the game asset's SAC. The factory must be that SAC's admin, since it mints each instance's funding.
+- `set_xp_token(xp_token)` — game admin only, once: the XP token is deployed after the factory.
+- `set_token_admin(new_admin)` — game admin only: hands the SAC admin role to the next factory on a redeploy.
+- `register_level(level_id: u32, wasm_hash: BytesN<32>, funding: i128, xp_reward: i128)` — game admin only. `funding` is the game tokens (in stroops) minted to each new instance.
+- `new_instance(player, level_id) -> Address` — `player.require_auth()`, deploys a fresh instance via `env.deployer()` with a salt derived from `(player, level_id, nonce)`, passes `(player, token)` to its constructor, mints its funding, stores the mapping, returns the address. Minting rather than drawing from a stock means repeated calls cannot starve other players.
 - `instance_of(player, level_id) -> Option<Address>`
-- `submit(player, level_id) -> bool` — `player.require_auth()`, calls `is_solved` on the player's instance. If true **and the level was not already solved by this player**, records it and mints the level's XP reward to the player through the XP token. Emits an event. A second `submit` on a solved level returns true but mints nothing.
+- `submit(player, level_id) -> bool` — `player.require_auth()`, calls `is_solved` on the player's instance. If true **and the level was not already solved by this player**, records it, adds the player to the player list on their first solve, counts the solve and mints the level's XP reward through the XP token. Emits `level_solved`. A second `submit` on a solved level returns true but mints nothing.
 - `progress(player) -> Vec<u32>` — solved level IDs, used by the UI.
+- `player_count() -> u32`, `players(start, limit) -> Vec<Address>` (at most 50 per call), `solves(level_id) -> u32` — read by the leaderboard and the level list. Kept in storage rather than rebuilt from events, which RPC servers only keep for a few days.
+- `level(level_id)`, `admin()`, `token()`, `xp_token()` — read-only accessors.
 
 ### XP token (`$DRAIN`)
 
@@ -119,7 +149,7 @@ A minimal custom Soroban token contract, **without** `transfer`, `transfer_from`
 - `balance(id) -> i128`
 - `decimals()`, `name()`, `symbol()` — for display in wallets and explorers.
 
-It does not implement the full SEP-41 interface, on purpose, since SEP-41 requires transfers. The leaderboard reads `balance` for each player who has submitted at least once.
+It does not implement the full SEP-41 interface, on purpose, since SEP-41 requires transfers. The leaderboard reads `balance` for each player in the factory's player list.
 
 **Fallback** if time runs short: drop the token and keep an XP counter inside the factory (`xp(player) -> i128`). Same game effect, nothing visible in the wallet.
 
@@ -131,11 +161,12 @@ The deployer API has changed across `soroban-sdk` versions. Check the current do
 
 ## 5. Frontend
 
-Three pages, Freighter wallet, nothing more.
+Four pages, any wallet supported by Stellar Wallets Kit.
 
-1. **Home** — concept in two sentences, permanent testnet banner, link to the public repo, the player's XP total, list of levels with status (locked / in progress / solved) and XP reward.
-2. **Level page** — story, full contract source, XP reward, the player's instance address, buttons **Create my instance** and **Check**, a hint revealed on click.
-3. **Leaderboard** — addresses ranked by `$DRAIN` balance.
+1. **Intro** (`/`) — a scroll-driven 3D intro, loaded on demand, with a plain fallback.
+2. **Levels** (`/play`) — the player's XP total and the list of levels with category, difficulty, XP, solve count and status (locked / in progress / solved), with filters and sorting.
+3. **Level page** (`/level/:id`) — story, full contract source, XP reward, the player's instance address, buttons **Create my instance** and **Check**, a hint revealed on click. Level 1 adds a step-by-step guide.
+4. **Leaderboard** (`/leaderboard`) — the factory's players ranked by `$DRAIN` balance.
 
 Player flow: connect Freighter → create instance → write the exploit with the Stellar CLI or a script → come back and click **Check** → screen turns green, XP counter animates up, link to the transaction on the testnet explorer.
 
