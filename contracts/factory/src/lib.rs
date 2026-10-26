@@ -1,7 +1,7 @@
 #![no_std]
 //! DrainMyWallet factory. Deploys one fresh instance of a level per player,
-//! funds it with game tokens, checks wins through the level's `is_solved`, and
-//! mints $DRAIN XP the first time a player solves a level.
+//! funds it with freshly minted game tokens, checks wins through the level's
+//! `is_solved`, and mints $DRAIN XP the first time a player solves a level.
 //!
 //! Every level must expose:
 //! - `__constructor(env, player: Address, token: Address)`
@@ -16,7 +16,7 @@ use soroban_sdk::{
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Level {
     pub wasm_hash: BytesN<32>,
-    /// Game tokens (in stroops) sent to each new instance.
+    /// Game tokens (in stroops) minted to each new instance.
     pub funding: i128,
     /// $DRAIN minted the first time a player solves the level.
     pub xp_reward: i128,
@@ -35,7 +35,11 @@ struct PlayerInstance {
 // TTLs: entries live for the network's minimum persistent TTL (about a week
 // on testnet), and anyone can extend them with `stellar contract extend`.
 // Extending the instance from here would also extend the factory's Wasm,
-// which costs thousands of testnet XLM per call.
+// which costs thousands of testnet XLM per call. `scripts/extend.sh` does it
+// from the admin's account instead.
+//
+// `PlayerCount` and `Solves` stay small, so they live in instance storage;
+// the player list grows without bound, so each `Player` is its own entry.
 #[contracttype]
 enum DataKey {
     Admin,
@@ -44,7 +48,15 @@ enum DataKey {
     Level(u32),
     Instance(Address, u32),
     Progress(Address),
+    PlayerCount,
+    /// The n-th player to solve a level, from 0.
+    Player(u32),
+    /// How many players have solved a level.
+    Solves(u32),
 }
+
+/// Most players `players` returns per call, to keep its read footprint small.
+pub const MAX_PAGE: u32 = 50;
 
 const IS_SOLVED: Symbol = symbol_short!("is_solved");
 
@@ -76,8 +88,9 @@ pub struct Factory;
 
 #[contractimpl]
 impl Factory {
-    /// `token` is the game asset's Stellar Asset Contract. The factory must
-    /// hold enough of it to fund new instances.
+    /// `token` is the game asset's Stellar Asset Contract. The factory mints
+    /// each instance's funding, so it must be the SAC's admin: see
+    /// `scripts/deploy.sh`, which hands the admin over after deploying.
     pub fn __constructor(env: &Env, admin: Address, token: Address) {
         env.storage().instance().set(&DataKey::Admin, &admin);
         env.storage().instance().set(&DataKey::Token, &token);
@@ -92,6 +105,13 @@ impl Factory {
             panic!("xp token already set");
         }
         env.storage().instance().set(&DataKey::XpToken, &xp_token);
+    }
+
+    /// Hands the game asset's admin role to `new_admin`, typically the next
+    /// factory when the game is redeployed. Game admin only.
+    pub fn set_token_admin(env: &Env, new_admin: Address) {
+        Self::admin(env).require_auth();
+        token::StellarAssetClient::new(env, &Self::token(env)).set_admin(&new_admin);
     }
 
     pub fn register_level(
@@ -117,7 +137,8 @@ impl Factory {
 
     /// Deploys a fresh instance of `level_id` for `player`, funds it and
     /// returns its address. Calling it again gives the player a new, clean
-    /// instance; the previous one is forgotten.
+    /// instance; the previous one is forgotten. Funding is minted rather than
+    /// drawn from a stock, so no number of calls can starve other players.
     pub fn new_instance(env: &Env, player: Address, level_id: u32) -> Address {
         player.require_auth();
         let level = Self::level(env, level_id).expect("unknown level");
@@ -140,11 +161,7 @@ impl Factory {
             );
 
         if level.funding > 0 {
-            token::TokenClient::new(env, &token).transfer(
-                &env.current_contract_address(),
-                &instance,
-                &level.funding,
-            );
+            token::StellarAssetClient::new(env, &token).mint(&instance, &level.funding);
         }
 
         let current = PlayerInstance {
@@ -186,10 +203,16 @@ impl Factory {
             return false;
         }
 
+        if progress.is_empty() {
+            Self::add_player(env, &player);
+        }
         progress.push_back(level_id);
         env.storage()
             .persistent()
             .set(&DataKey::Progress(player.clone()), &progress);
+        let solves_key = DataKey::Solves(level_id);
+        let solves = Self::solves(env, level_id);
+        env.storage().instance().set(&solves_key, &(solves + 1));
 
         XpTokenClient::new(env, &Self::xp_token(env)).mint(&player, &level.xp_reward);
 
@@ -208,6 +231,36 @@ impl Factory {
             .persistent()
             .get(&DataKey::Progress(player))
             .unwrap_or(Vec::new(env))
+    }
+
+    /// How many players have solved at least one level.
+    pub fn player_count(env: &Env) -> u32 {
+        env.storage()
+            .instance()
+            .get(&DataKey::PlayerCount)
+            .unwrap_or(0)
+    }
+
+    /// Players in the order of their first solve, from `start`, at most
+    /// `MAX_PAGE` of them. The leaderboard reads this instead of events,
+    /// which RPC servers only keep for a few days.
+    pub fn players(env: &Env, start: u32, limit: u32) -> Vec<Address> {
+        let end = Self::player_count(env).min(start.saturating_add(limit.min(MAX_PAGE)));
+        let mut page = Vec::new(env);
+        for i in start..end {
+            if let Some(player) = env.storage().persistent().get(&DataKey::Player(i)) {
+                page.push_back(player);
+            }
+        }
+        page
+    }
+
+    /// How many players have solved `level_id`.
+    pub fn solves(env: &Env, level_id: u32) -> u32 {
+        env.storage()
+            .instance()
+            .get(&DataKey::Solves(level_id))
+            .unwrap_or(0)
     }
 
     pub fn level(env: &Env, level_id: u32) -> Option<Level> {
@@ -231,6 +284,16 @@ impl Factory {
 }
 
 impl Factory {
+    fn add_player(env: &Env, player: &Address) {
+        let count = Self::player_count(env);
+        env.storage()
+            .persistent()
+            .set(&DataKey::Player(count), player);
+        env.storage()
+            .instance()
+            .set(&DataKey::PlayerCount, &(count + 1));
+    }
+
     /// sha256(player || level_id || nonce): unique per player, level and
     /// attempt, so each `new_instance` deploys to a new address.
     fn salt(env: &Env, player: &Address, level_id: u32, nonce: u32) -> BytesN<32> {

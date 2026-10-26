@@ -7,8 +7,10 @@
 #
 # Env:
 #   ASSET_CODE          game asset code (default LOOT)
-#   FACTORY_STOCK       game tokens minted to the factory, in stroops
 #   WITH_TEST_LEVEL=1   also register contracts/test-level as level 99 (local smoke test)
+#
+# The factory mints each instance's funding, so it becomes the admin of the
+# game asset's SAC. On a redeploy the previous factory hands the role over.
 #
 # Writes the resulting ids to deployments/<network>.env.
 set -euo pipefail
@@ -16,12 +18,12 @@ set -euo pipefail
 NETWORK="${1:-testnet}"
 ADMIN="${2:-drain-admin}"
 ASSET_CODE="${ASSET_CODE:-LOOT}"
-# 1,000,000 tokens with the SAC's 7 decimals: enough for 1,000 funded instances.
-FACTORY_STOCK="${FACTORY_STOCK:-10000000000000}"
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 WASM_DIR="$ROOT/target/wasm32v1-none/release"
 OUT="$ROOT/deployments/$NETWORK.env"
+# The factory being replaced, if any: it holds the SAC admin role
+PREVIOUS_FACTORY="$(sed -n 's/^FACTORY_ID=//p' "$OUT" 2>/dev/null || true)"
 
 # id  package                  funding (stroops)  xp
 LEVELS=(
@@ -75,20 +77,32 @@ TOKEN_ID="$(stellar contract asset deploy --asset "$ASSET" $(net) 2>/dev/null ||
   stellar contract id asset --asset "$ASSET" --network "$NETWORK")"
 echo "$TOKEN_ID"
 
+# Uploaded first so the hashes can be recorded: scripts/extend.sh needs them
 log "Factory"
-FACTORY_ID="$(stellar contract deploy --wasm "$WASM_DIR/factory.wasm" $(net) \
+FACTORY_WASM_HASH="$(stellar contract upload --wasm "$WASM_DIR/factory.wasm" $(net))"
+FACTORY_ID="$(stellar contract deploy --wasm-hash "$FACTORY_WASM_HASH" $(net) \
   -- --admin "$ADMIN_ADDR" --token "$TOKEN_ID")"
 echo "$FACTORY_ID"
 
 log "XP token (\$DRAIN)"
-XP_ID="$(stellar contract deploy --wasm "$WASM_DIR/xp_token.wasm" $(net) \
+XP_TOKEN_WASM_HASH="$(stellar contract upload --wasm "$WASM_DIR/xp_token.wasm" $(net))"
+XP_ID="$(stellar contract deploy --wasm-hash "$XP_TOKEN_WASM_HASH" $(net) \
   -- --factory "$FACTORY_ID")"
 echo "$XP_ID"
 stellar contract invoke --id "$FACTORY_ID" $(net) -- set_xp_token --xp_token "$XP_ID" >/dev/null
 
-log "Stocking the factory with $FACTORY_STOCK stroops of $ASSET_CODE"
-stellar contract invoke --id "$TOKEN_ID" $(net) -- \
-  mint --to "$FACTORY_ID" --amount "$FACTORY_STOCK" >/dev/null
+log "Handing the $ASSET_CODE admin role to the factory"
+TOKEN_ADMIN="$(stellar contract invoke --id "$TOKEN_ID" $(net) -- admin | tr -d '"')"
+if [[ "$TOKEN_ADMIN" == "$ADMIN_ADDR" ]]; then
+  stellar contract invoke --id "$TOKEN_ID" $(net) -- set_admin --new_admin "$FACTORY_ID" >/dev/null
+elif [[ -n "$PREVIOUS_FACTORY" && "$TOKEN_ADMIN" == "$PREVIOUS_FACTORY" ]]; then
+  stellar contract invoke --id "$PREVIOUS_FACTORY" $(net) -- \
+    set_token_admin --new_admin "$FACTORY_ID" >/dev/null
+else
+  echo "error: the $ASSET_CODE admin is $TOKEN_ADMIN, neither $ADMIN nor the previous factory" >&2
+  exit 1
+fi
+echo "admin is now $FACTORY_ID"
 
 mkdir -p "$(dirname "$OUT")"
 {
@@ -97,7 +111,9 @@ mkdir -p "$(dirname "$OUT")"
   echo "GAME_ASSET=$ASSET"
   echo "GAME_TOKEN_ID=$TOKEN_ID"
   echo "FACTORY_ID=$FACTORY_ID"
+  echo "FACTORY_WASM_HASH=$FACTORY_WASM_HASH"
   echo "XP_TOKEN_ID=$XP_ID"
+  echo "XP_TOKEN_WASM_HASH=$XP_TOKEN_WASM_HASH"
 } >"$OUT.tmp"
 
 log "Registering levels"
