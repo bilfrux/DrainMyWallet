@@ -372,3 +372,31 @@
 		transition: none;
 	}
 }
+
+/* ── The "which function?" question ───────────────────── */
+
+.quiz {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.6rem;
+	margin: 0.4rem 0 0.8rem;
+}
+
+.option {
+	font-family: var(--font-mono);
+	text-transform: none;
+	letter-spacing: 0.02em;
+	font-size: 0.9rem;
+}
+
+.option[aria-pressed="true"] {
+	border-color: #ff4d7e;
+	color: #ff4d7e;
+}
+
+.feedback {
+	color: #ff8aa8;
+	padding: 0.6rem 0.9rem;
+	border-left: 3px solid #ff4d7e;
+	background: rgba(255, 77, 126, 0.07);
+}
