@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { levels } from "../../game/levels"
+import { FLASH_AT, FLASH_WIDTH } from "./flash"
 import styles from "./Landing3D.module.css"
-import { FLASH_AT, FLASH_WIDTH, type LandingScene } from "./scene"
+import { type LandingScene } from "./scene"
 
 interface Chapter {
 	id: string

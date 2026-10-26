@@ -30,7 +30,7 @@ const Leaderboard = () => {
 					</p>
 				) : isLoading ? (
 					<p className={styles.muted}>
-						scanning factory events
+						reading the factory&apos;s players
 						<span className="cursor" />
 					</p>
 				) : error ? (
@@ -67,7 +67,16 @@ const Leaderboard = () => {
 											<span className={styles.youTag}>you</span>
 										)}
 									</td>
-									<td className={styles.xp}>{entry.xp.toLocaleString()}</td>
+									<td
+										className={styles.xp}
+										title={
+											entry.xp === undefined
+												? "Balance unreadable: its ledger entry may have expired"
+												: undefined
+										}
+									>
+										{entry.xp?.toLocaleString() ?? "?"}
+									</td>
 								</tr>
 							))}
 						</tbody>

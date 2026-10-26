@@ -10,6 +10,7 @@ import { useQueryClient } from "@tanstack/react-query"
 import { useState, useTransition } from "react"
 import { Link, useParams } from "react-router-dom"
 import AccessOverlay, { type CheckOutcome } from "../components/AccessOverlay"
+import AttackKit from "../components/AttackKit"
 import GuidedTour from "../components/guide/GuidedTour"
 import SourceView from "../components/SourceView"
 import Terminal from "../components/Terminal"
@@ -55,9 +56,15 @@ const LevelPage = () => {
 
 	const refresh = () =>
 		Promise.all(
-			["instance", "instances", "progress", "xp", "loot", "leaderboard"].map(
-				(key) => queryClient.invalidateQueries({ queryKey: [key] }),
-			),
+			[
+				"instance",
+				"instances",
+				"progress",
+				"xp",
+				"loot",
+				"leaderboard",
+				"solve-counts",
+			].map((key) => queryClient.invalidateQueries({ queryKey: [key] })),
 		)
 
 	const create = () =>
@@ -205,18 +212,14 @@ const LevelPage = () => {
 								</button>
 							</div>
 
-							{level.needsTrustline && <TrustlineStep address={address} />}
+							{level.needsTrustline && <TrustlineStep />}
 
 							{instanceId && (
-								<>
-									<p className={styles.label}>attack from your terminal</p>
-									<pre className={styles.cli}>
-										{`stellar contract invoke \\
-  --id ${instanceId} \\
-  --source <your-key> --network testnet \\
-  -- --help`}
-									</pre>
-								</>
+								<AttackKit
+									instanceId={instanceId}
+									address={address}
+									walletSigns={!!level.walletSigns}
+								/>
 							)}
 							<p className={styles.small}>
 								You need a funded testnet account: use <em>Fund account</em>{" "}

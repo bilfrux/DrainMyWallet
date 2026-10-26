@@ -50,25 +50,6 @@ networks:
 # override them. A contract only exists on the networks it lists, so building
 # another network skips it and leaves it out of the generated clients.
 contracts:
-  guess-the-number:
-    networks:
-      local:
-        type: workspace
-        source: guess-the-number # the crate's package name
-        args:
-          admin: ${account.me}
-        # Contract methods called after deploy; they take no arguments.
-        after-deploy: [reset]
-
-      # Public networks point at a deployment you made and reviewed
-      # separately, rather than deploying from the dev loop
-      testnet:
-        type: contract
-        source: CAAXJETKPYAATU4HVVQUTE2FFBULNFGZNEOC3MS635U5K3GZLAY2HI4M # replace with your contract ID
-      # mainnet:
-      #   type: contract
-      #   source: C...
-
   # Game contracts. They are deployed by scripts/deploy.sh, not by Scaffold
   # (the factory needs the game asset's SAC and the XP token needs the
   # factory's address), so every network points at an existing deployment.
@@ -77,10 +58,10 @@ contracts:
     networks:
       testnet:
         type: contract
-        source: CAYALJ6CCEM6UEKEQG2SMBLIBBEGTLCXPRQQLV56DETFPFVDXYLB6JDC
+        source: CA6L5VQSIYDW6D5WGOPKF3YETYAQVY54KV4XPAQG3JQMB4TLO7XN6YU6
 
   xp-token:
     networks:
       testnet:
         type: contract
-        source: CATI7CZZ7KNF4USZXM4TFVQ3FRXZXQMSRCFTCHOYENYPUSI3Z43EE6SB
+        source: CAFAPEKDAFXAQGB6HETOMY4TLLK4MP7E2CPYVPPLJR5UBBTUQUHVL7ZG

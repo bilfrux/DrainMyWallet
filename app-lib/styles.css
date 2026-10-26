@@ -200,37 +200,3 @@ dialog p {
 dialog code {
 	word-break: break-all;
 }
-
-/* GuessTheNumber */
-.guess-the-number {
-	margin-bottom: 2rem;
-}
-
-.guess-the-number form {
-	display: flex;
-	gap: 1rem;
-	align-items: stretch;
-	margin-bottom: 1rem;
-}
-
-.guess-the-number form input {
-	flex: 1;
-}
-
-.guess-result {
-	padding: 0.5rem 1rem;
-}
-
-.guess-result p {
-	margin: 0;
-}
-
-.guess-result--success {
-	border-color: var(--color-success);
-	color: var(--color-success);
-}
-
-.guess-result--failure {
-	border-color: var(--color-error);
-	color: var(--color-error);
-}

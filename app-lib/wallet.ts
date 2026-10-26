@@ -189,5 +189,5 @@ export const fetchBalances = async (
 	}
 }
 
-// The kit itself, for templates that need `on(...)` subscriptions or `setWallet`.
+// The kit itself, for code that needs `on(...)` subscriptions or `setWallet`.
 export const wallet = StellarWalletsKit

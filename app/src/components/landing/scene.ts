@@ -6,6 +6,7 @@ import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer
 import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js"
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js"
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js"
+import { FLASH_AT, FLASH_WIDTH } from "./flash"
 
 /**
  * The scroll-driven 3D scene of the home page: a neon wireframe wallet that
@@ -31,9 +32,6 @@ const HOLD_END = 0.9
 const DOOR_THROUGH = 0.97
 const TUNNEL_END = -72
 const VAULT_ROOM = -106
-/** Progress of the flash as the camera crosses the door; the page overlay uses the same value */
-export const FLASH_AT = 0.934
-export const FLASH_WIDTH = 0.03
 const smooth = (a: number, b: number, v: number) => {
 	const t = clamp01((v - a) / (b - a))
 	return t * t * (3 - 2 * t)

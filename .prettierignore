@@ -18,3 +18,6 @@ app-lib/clients
 # Test output
 test-results
 playwright-report
+
+# Markdown keeps one paragraph per line; Prettier would hard-wrap it
+*.md

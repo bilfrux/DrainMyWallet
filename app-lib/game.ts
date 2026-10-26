@@ -1,11 +1,4 @@
-import {
-	Asset,
-	contract,
-	Keypair,
-	rpc,
-	scValToNative,
-	xdr,
-} from "@stellar/stellar-sdk"
+import { Asset, contract, Keypair, rpc, xdr } from "@stellar/stellar-sdk"
 import { allowHttp, networkPassphrase, rpcUrl, stellarNetwork } from "./env"
 import { signTransaction } from "./wallet"
 
@@ -39,6 +32,9 @@ interface FactoryClient {
 	instance_of: Call<{ player: string; level_id: number }, string | undefined>
 	submit: Call<{ player: string; level_id: number }, boolean>
 	progress: Call<{ player: string }, number[]>
+	player_count: Call<Record<string, never>, number>
+	players: Call<{ start: number; limit: number }, string[]>
+	solves: Call<{ level_id: number }, number>
 	xp_token: Call<Record<string, never>, string>
 	level: Call<{ level_id: number }, LevelConfig | undefined>
 	token: Call<Record<string, never>, string>
@@ -167,6 +163,9 @@ export const submitLevel = async (
 	levelId: number,
 ): Promise<TxOutcome<boolean>> => {
 	const client = await factory(player)
+	// Already solved: the factory would only answer true again, so skip the
+	// signature for a transaction that changes nothing
+	if ((await fetchProgress(player)).includes(levelId)) return { result: true }
 	const tx = await client.submit({ player, level_id: levelId })
 	// Not solved yet: the simulation already says so, no need to bother the
 	// wallet for a signature that would only record `false`.
@@ -272,97 +271,58 @@ export const fetchLoot = async (player: string): Promise<LootStatus> => {
 
 export interface LeaderboardEntry {
 	address: string
-	xp: bigint
+	/** `undefined` when the balance can't be read, e.g. its entry expired */
+	xp: bigint | undefined
 }
 
-const decode = (val: xdr.ScVal): unknown => {
-	try {
-		return scValToNative(val)
-	} catch {
-		return undefined
-	}
-}
-
-const LEVEL_SOLVED = xdr.ScVal.scvSymbol("level_solved").toXDR("base64")
-
-interface SolvedEvent {
-	player: string
-	levelId: number
-}
-
-let solvedScan: { at: number; promise: Promise<SolvedEvent[]> } | undefined
+/** The factory's `players` page size (`MAX_PAGE` in the contract). */
+const PLAYERS_PAGE = 50
 
 /**
- * Every `level_solved` event of the factory (topics: name, player, level_id)
- * within the RPC retention window. RPC scans a bounded ledger range per request
- * and can return an empty page with a cursor, so page until the cursor reaches
- * the tip. The leaderboard and the per-level solve counts share one scan.
+ * Every player who solved a level, as the factory lists them. Kept on-chain
+ * rather than rebuilt from events, which RPC servers only keep for days.
  */
-const scanSolved = (): Promise<SolvedEvent[]> => {
-	if (solvedScan && Date.now() - solvedScan.at < 30_000) {
-		return solvedScan.promise
-	}
-	const promise = (async () => {
-		const factoryId = requireFactory()
-		const { oldestLedger, latestLedger } = await server.getHealth()
-		const found: SolvedEvent[] = []
-		const filters: rpc.Api.EventFilter[] = [
-			{
-				type: "contract",
-				contractIds: [factoryId],
-				topics: [[LEVEL_SOLVED, "*", "*"]],
-			},
-		]
-
-		let request: rpc.Api.GetEventsRequest = {
-			filters,
-			startLedger: oldestLedger,
-			limit: 1000,
-		}
-		for (let page = 0; page < 50; page++) {
-			const { events, cursor } = await server.getEvents(request)
-			for (const event of events) {
-				const player = event.topic[1] && decode(event.topic[1])
-				const levelId = event.topic[2] && decode(event.topic[2])
-				if (typeof player === "string" && typeof levelId === "number") {
-					found.push({ player, levelId })
-				}
-			}
-			// Cursors are "<toid>-<index>"; the ledger is the toid's high 32 bits
-			const scanned = Number(BigInt(cursor.split("-")[0] ?? "0") >> 32n)
-			if (scanned >= latestLedger) break
-			request = { filters, cursor, limit: 1000 }
-		}
-		return found
-	})()
-	solvedScan = { at: Date.now(), promise }
-	promise.catch(() => (solvedScan = undefined))
-	return promise
+const fetchPlayers = async (): Promise<string[]> => {
+	const client = await factory()
+	const count = Number(unwrap<number>((await client.player_count({})).result))
+	const pages = await Promise.all(
+		Array.from({ length: Math.ceil(count / PLAYERS_PAGE) }, async (_, i) => {
+			const tx = await client.players({
+				start: i * PLAYERS_PAGE,
+				limit: PLAYERS_PAGE,
+			})
+			return unwrap<string[]>(tx.result)
+		}),
+	)
+	return pages.flat()
 }
 
-/** Players ranked by their $DRAIN balance. */
+/** Players ranked by their $DRAIN balance; unreadable balances come last. */
 export const fetchLeaderboard = async (): Promise<LeaderboardEntry[]> => {
-	const players = new Set((await scanSolved()).map((e) => e.player))
 	const entries = await Promise.all(
-		[...players].map(async (address) => ({
+		(await fetchPlayers()).map(async (address) => ({
 			address,
-			xp: await fetchXp(address).catch(() => 0n),
+			xp: await fetchXp(address).catch(() => undefined),
 		})),
 	)
-	return entries
-		.filter((e) => e.xp > 0n)
-		.sort((a, b) => (b.xp > a.xp ? 1 : b.xp < a.xp ? -1 : 0))
+	const rank = (xp: bigint | undefined) => xp ?? -1n
+	return entries.sort((a, b) =>
+		rank(b.xp) > rank(a.xp) ? 1 : rank(b.xp) < rank(a.xp) ? -1 : 0,
+	)
 }
 
 /** How many distinct players have solved each level. */
-export const fetchSolveCounts = async (): Promise<Map<number, number>> => {
-	const byLevel = new Map<number, Set<string>>()
-	for (const { player, levelId } of await scanSolved()) {
-		const set = byLevel.get(levelId) ?? new Set<string>()
-		set.add(player)
-		byLevel.set(levelId, set)
-	}
-	return new Map([...byLevel].map(([id, players]) => [id, players.size]))
+export const fetchSolveCounts = async (
+	levelIds: number[],
+): Promise<Map<number, number>> => {
+	const client = await factory()
+	const counts = await Promise.all(
+		levelIds.map(async (id) => {
+			const tx = await client.solves({ level_id: id })
+			return [id, Number(unwrap<number>(tx.result))] as const
+		}),
+	)
+	return new Map(counts)
 }
 
 /** Testnet explorer links (stellar.expert). */
