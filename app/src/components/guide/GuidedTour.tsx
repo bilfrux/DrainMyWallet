@@ -123,73 +123,10 @@ const GuidedTour = ({
 
 	const steps: Step[] = [
 		{
-			id: "wallet",
-			title: "Connect your wallet",
-			done: !!address,
-			summary: "Your wallet is your identity on Stellar.",
-			body: (
-				<>
-					<p>
-						A wallet (such as Freighter) is how you sign in on a blockchain:
-						your address is your account. This site only ever asks it to sign{" "}
-						<strong>two things</strong>: creating your instance and checking it.
-						It never signs an attack for you.
-					</p>
-					<p className={styles.tip}>
-						Set the wallet to <strong>Testnet</strong>: this is practice money,
-						nothing real is at stake.
-					</p>
-					<button onClick={() => void connectWallet()}>Connect wallet</button>
-				</>
-			),
-		},
-		{
-			id: "xlm",
-			title: "Get free test money",
-			done: !!balances.xlm,
-			summary: "Every action on Stellar costs a tiny fee.",
-			body: (
-				<>
-					<p>
-						On testnet the fees are paid in <strong>fake XLM</strong>. A free
-						service called Friendbot hands you some: one click.
-					</p>
-					<FundAccountButton whenFunded="note" />
-				</>
-			),
-		},
-		{
-			id: "instance",
-			title: "Create your instance",
-			done: !!instanceId,
-			summary: "Deploy your own copy of the level.",
-			body: (
-				<>
-					<p>
-						This deploys a fresh <strong>vault</strong> contract just for you,
-						holding <strong>1,000 LOOT</strong> tokens. Your wallet will ask you
-						to approve one transaction.
-					</p>
-					<button onClick={onCreate} disabled={!canPlay || creating}>
-						{creating
-							? "Deploying…"
-							: instanceId
-								? "Create a fresh instance"
-								: "Create my instance"}
-					</button>
-					{instanceId && (
-						<p className={styles.small}>
-							Your vault lives at <code>{instanceId}</code>
-						</p>
-					)}
-				</>
-			),
-		},
-		{
 			id: "read",
 			title: "Read the contract and find the bug",
 			done: revealed,
-			summary: "One function forgot a check. Which one?",
+			summary: "No wallet needed: read the code and find the missing check.",
 			body: (
 				<>
 					<p>
@@ -272,6 +209,69 @@ const GuidedTour = ({
 							Jump to the code ↓
 						</button>
 					</p>
+				</>
+			),
+		},
+		{
+			id: "wallet",
+			title: "Connect your wallet",
+			done: !!address,
+			summary: "Your wallet is your identity on Stellar.",
+			body: (
+				<>
+					<p>
+						A wallet (such as Freighter) is how you sign in on a blockchain:
+						your address is your account. This site only ever asks it to sign{" "}
+						<strong>two things</strong>: creating your instance and checking it.
+						It never signs an attack for you.
+					</p>
+					<p className={styles.tip}>
+						Set the wallet to <strong>Testnet</strong>: this is practice money,
+						nothing real is at stake.
+					</p>
+					<button onClick={() => void connectWallet()}>Connect wallet</button>
+				</>
+			),
+		},
+		{
+			id: "xlm",
+			title: "Get free test money",
+			done: !!balances.xlm,
+			summary: "Every action on Stellar costs a tiny fee.",
+			body: (
+				<>
+					<p>
+						On testnet the fees are paid in <strong>fake XLM</strong>. A free
+						service called Friendbot hands you some: one click.
+					</p>
+					<FundAccountButton whenFunded="note" />
+				</>
+			),
+		},
+		{
+			id: "instance",
+			title: "Create your instance",
+			done: !!instanceId,
+			summary: "Deploy your own copy of the level.",
+			body: (
+				<>
+					<p>
+						This deploys a fresh <strong>vault</strong> contract just for you,
+						holding <strong>1,000 LOOT</strong> tokens. Your wallet will ask you
+						to approve one transaction.
+					</p>
+					<button onClick={onCreate} disabled={!canPlay || creating}>
+						{creating
+							? "Deploying…"
+							: instanceId
+								? "Create a fresh instance"
+								: "Create my instance"}
+					</button>
+					{instanceId && (
+						<p className={styles.small}>
+							Your vault lives at <code>{instanceId}</code>
+						</p>
+					)}
 				</>
 			),
 		},
