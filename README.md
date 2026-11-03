@@ -1,12 +1,14 @@
 # DrainMyWallet
 
+🏆 **Winner of the Best UX award at HackMeridian 2026**, among 160+ projects from 320+ builders.
+
 **A security wargame for Soroban.** Each level is a deliberately vulnerable smart contract. You deploy your own instance on Stellar **testnet**, exploit it from the command line, then ask the game to verify the win on-chain. Win a level, earn non-transferable `$DRAIN` XP.
 
 > Educational CTF. **Testnet only. No real funds, ever.** The site never signs an exploit for you: it only creates your instance and checks the result.
 
 **Live site: https://drainmywallet.vercel.app** (Stellar testnet)
 
-Built at HackMeridian, Lisbon, 25–26 Oct 2026 (Genesis track), where it won the **Best UX** award among 160+ projects from 320+ builders.
+Built at HackMeridian, Lisbon, 25–26 Oct 2026 (Genesis track).
 
 ## The problem
 
