@@ -6,7 +6,7 @@
 
 **Live site: https://drainmywallet.vercel.app** (Stellar testnet)
 
-Built at HackMeridian, Lisbon, 25–26 Oct 2026 (Genesis track).
+Built at HackMeridian, Lisbon, 25–26 Oct 2026 (Genesis track), where it won the **Best UX** award among 160+ projects from 320+ builders.
 
 ## The problem
 
